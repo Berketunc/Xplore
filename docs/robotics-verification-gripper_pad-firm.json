@@ -1,0 +1,32 @@
+{
+  "base_url": "https://tnberkec--xplore-simulation-api.us-east.modal.run",
+  "candidate_id": "firm",
+  "session_id": "7b9a321fee038422c1705e42622f9637",
+  "ready_seconds": 13.082488083979115,
+  "received_updates_per_second": 32.636009925357016,
+  "first_motion_seconds": 0.9688354579848237,
+  "max_surface_displacement_mpm": 0.03000485897064209,
+  "reset_verified": true,
+  "surface_vertices": 738,
+  "configuration": {
+    "object_type": "gripper_pad",
+    "candidate_id": "firm",
+    "width": 1.0,
+    "depth": 0.6,
+    "thickness": 0.16,
+    "stiffness_multiplier": 2.0
+  },
+  "remaining_starts_after_reservation": 9,
+  "physics": "PowerSim bundled PhysGaussian MPM; procedural geometry and a structured surface proxy",
+  "checks": [
+    "CPU geometry preview",
+    "GPU matches configured geometry/material",
+    "public WebSocket",
+    "real GPU grab deformation",
+    "non-rigid motion",
+    "finite positions",
+    "release",
+    "reset",
+    "stop"
+  ]
+}

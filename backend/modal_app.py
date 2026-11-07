@@ -21,7 +21,7 @@ inspection_image = modal.Image.debian_slim(python_version="3.11")
 record_mapping = modal.Dict.from_name("xplore-records-v1", create_if_missing=True)
 claims = modal.Dict.from_name("xplore-compute-claims-v1", create_if_missing=True)
 api_image = (
-    inspection_image.pip_install("fastapi==0.121.0", "pydantic==2.14.3", "starlette==0.49.3")
+    inspection_image.pip_install("fastapi==0.121.0", "pydantic==2.14.3", "starlette==0.49.3", "numpy==2.1.2")
     .env({"PYTHONPATH": "/opt/xplore"})
     .add_local_dir(str(ROOT / "backend"), "/opt/xplore/backend", ignore=[".venv/", "__pycache__/"])
     .add_local_dir(str(ROOT / "shared"), "/opt/xplore/shared")
@@ -31,6 +31,7 @@ runtime_image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg", "libgl1", "libglib2.0-0", "libgomp1", "build-essential")
     .pip_install_from_requirements(str(SOURCE / "requirements.txt"))
+    .pip_install("pydantic==2.14.3")
     .add_local_dir(
         str(SOURCE),
         "/opt/PowerSim",
@@ -432,14 +433,14 @@ def api():
 
 @app.function(image=runtime_image, gpu=["L4", "L40S", "A10", "T4"], volumes={"/data": volume}, cpu=4, memory=8192,
               timeout=180, startup_timeout=90, max_containers=1, scaledown_window=30)
-def stream_physics(commands, candidate):
+def stream_physics(commands, candidate, configuration=None):
     import queue
     import threading
     import time
     from backend.interactive import InteractivePhysics
 
     volume.reload()
-    model = InteractivePhysics(candidate)
+    model = InteractivePhysics(candidate, configuration)
     model.substeps = 33
     model.step()
     volume.commit()  # Persist compiled Warp kernels for later cold starts.
@@ -474,7 +475,7 @@ def stream_physics(commands, candidate):
                 elif item["type"] == "release":
                     model.release()
                 elif item["type"] == "reset":
-                    model = InteractivePhysics(candidate)
+                    model = InteractivePhysics(candidate, configuration)
                     model.substeps = 33
             positions = model.step()
             yield {"type": "frame", "positions": positions, "sequence": model.frame,

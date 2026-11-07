@@ -21,10 +21,14 @@ Copy `.env.example` to `.env.local` and set:
 
 In live mode the backend must allow CORS from the frontend origin.
 
-Live mode opens **Grab and deform**, embedding the backend-hosted 3D workspace
-with a real GPU physics WebSocket. Press Start live physics before dragging.
-**Recorded comparison** retains the experiment workflow below; saved experiment
-URLs open that tab directly. Mock mode defaults to the recorded fixture workflow.
+Live mode opens the **silicone-inspired gripper pad**. Click **+ New experiment**
+to choose a pad or material block, change dimensions and stiffness, then start
+real GPU physics. The preview updates without a GPU session. Press Start live
+physics before dragging. Live mouse tests are temporary and are not saved.
+**Pillow baseline archive** retains the experiment workflow below; saved experiment
+URLs open that archive directly. Mock mode defaults to the archived fixture flow.
+Run the frontend locally; Modal still provides the GPU and requires internet.
+Public frontend hosting and AI/voice integration have been removed from scope.
 See [the interaction handoff](../docs/interactive-handoff.md) for controls,
 temporary session behavior, rendering assumptions and compute limits.
 

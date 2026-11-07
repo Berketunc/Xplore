@@ -29,6 +29,7 @@ const timeAxisLabel = (unit: string | undefined) =>
   unit === "simulation_s" ? "Simulation time (s)" : unit === "frame" ? "Frame" : (unit ?? "Time");
 
 export default function App() {
+  const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const [workspace, setWorkspace] = useState<"interact" | "compare">(() => idFromUrl() || api.mode !== "live" ? "compare" : "interact");
   const { catalog, error: catalogError, retry } = useCatalog();
   const test = catalog?.tests.find((t) => t.availability === "available") ?? catalog?.tests[0];
@@ -150,13 +151,14 @@ export default function App() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
         <p className="mb-6 max-w-3xl text-sm text-ink-2">
-          Grab and deform a prepared soft object, explore stiffness scenarios, or compare recorded material experiments.
+          Create a silicone-inspired robot gripper pad, set its dimensions and stiffness, then press or stretch it with your mouse.
         </p>
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex flex-wrap gap-2">
+          <button type="button" onClick={() => { openExperiment(null); setWorkspace("interact"); setWorkspaceVersion(v => v + 1); }} className="rounded-lg bg-ink px-4 py-2 text-sm text-surface">+ New experiment</button>
           <button type="button" aria-pressed={workspace === "interact"} onClick={() => setWorkspace("interact")} className={`rounded-lg border px-4 py-2 text-sm ${workspace === "interact" ? "bg-ink text-surface" : "border-hairline bg-surface text-ink"}`}>Grab and deform</button>
-          <button type="button" aria-pressed={workspace === "compare"} onClick={() => setWorkspace("compare")} className={`rounded-lg border px-4 py-2 text-sm ${workspace === "compare" ? "bg-ink text-surface" : "border-hairline bg-surface text-ink"}`}>Recorded comparison</button>
+          <button type="button" aria-pressed={workspace === "compare"} onClick={() => setWorkspace("compare")} className={`rounded-lg border px-4 py-2 text-sm ${workspace === "compare" ? "bg-ink text-surface" : "border-hairline bg-surface text-ink"}`}>Pillow baseline archive</button>
         </div>
-        {workspace === "interact" && <InteractiveWorkspace />}
+        {workspace === "interact" && <InteractiveWorkspace key={workspaceVersion} />}
 
         {workspace === "compare" && !catalog && !catalogError && (
           <p className="flex items-center gap-2 text-sm text-ink-2">
@@ -284,11 +286,11 @@ export default function App() {
       </main>
 
       <footer className="mx-auto max-w-7xl px-4 pb-10 text-xs text-ink-muted lg:px-8">
-        Simulation method and released scene assets:{" "}
+        Physics solver bundled with{" "}
         <a className="underline hover:text-ink" href="https://github.com/nttung1110/PowerSim" target="_blank" rel="noreferrer">
           PowerSim
         </a>
-        , credited to its original authors. Xplore contributes the experiment workflow, measurements and comparison.
+        , credited to its original authors. Xplore contributes the procedural specimens, interaction and experiment workflow.
       </footer>
     </div>
   );

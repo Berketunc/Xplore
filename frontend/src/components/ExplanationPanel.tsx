@@ -10,7 +10,7 @@ export function ExplanationPanel({ experiment, test }: { experiment: Experiment;
   return (
     <Card
       title="Shortlist and explanation"
-      aside={<Pill>Rule-based · from the experiment record · no AI</Pill>}
+      aside={<Pill>From recorded results</Pill>}
     >
       <p className="text-base font-semibold text-ink">{explanation.headline}</p>
       <div className="mt-3 space-y-2 text-sm text-ink-2">

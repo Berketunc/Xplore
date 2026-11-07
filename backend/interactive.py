@@ -1,38 +1,38 @@
 """Physics-only PowerSim MPM session; graphics are drawn by the browser."""
 
-import json
 from pathlib import Path
 
 
 class InteractivePhysics:
-    def __init__(self, candidate="balanced"):
-        import numpy as np
+    def __init__(self, candidate="balanced", configuration=None):
         import torch
         import warp as wp
-        from scipy.spatial import ConvexHull
-        from powersim.core.primitive_state import compute_grid_occupancy_volume
-        from powersim.core.thirdparty_paths import ensure_physgaussian_on_path, load_physgaussian_decode_param
         from powersim.foam_evolve.mpm.solver import build_mpm_solver
+        from backend.geometry import build_geometry
 
         cache = Path("/data/warp-cache/interactive")
         cache.mkdir(parents=True, exist_ok=True)
         wp.config.kernel_cache_dir = str(cache)
         wp.init()
-        registry = json.loads(Path("/data/controlled/registry.json").read_text())
-        directory = Path("/data/runs") / registry["runs"]["balanced"]
-        reference = torch.load(directory / "xplore_state/reference.pt", map_location="cpu", weights_only=True)
-        self.reference = reference["positions_mpm"].float()
-        self.groups = json.loads((directory / "groups.json").read_text())
+        geometry = build_geometry(configuration or {"candidate_id": candidate})
+        self.reference = torch.from_numpy(geometry.positions.copy())
+        self.mesh = geometry.mesh
+        self.configuration = self.mesh["configuration"]
+        self.groups = {"lower": geometry.support_ids.tolist()}
+        self.max_drag = min(.25, self.configuration["thickness"]*.4)
         self.dt = .001
         self.substeps = 10
-        ensure_physgaussian_on_path()
-        decoder = load_physgaussian_decode_param()
-        material, boundaries, timing, _, _ = decoder.decode_param_json(str(directory / "config.json"))
-        material["E"] = 10000 * {"flexible": .5, "balanced": 1., "firm": 2.}[candidate]
-        timing["substep_dt"] = self.dt
-        boundaries = [bc for bc in boundaries if bc["type"] != "particle_impulse"]
+        material = {"material": "jelly", "n_grid": 100, "grid_lim": 2.,
+            "E": 10000*self.configuration["stiffness_multiplier"], "nu": .3, "density": 2000,
+            "g": [0,0,0], "grid_v_damping_scale": .9990004498800211}
+        support_z = self.mesh["support_z_max"]
+        support = {"point": [1.,1.,support_z/2], "size": [1.,1.,support_z/2+1e-6],
+            "velocity": [0,0,0], "start_time": 0., "end_time": 1000.}
+        boundaries = [{"type": "bounding_box"}, {"type": "cuboid", **support},
+            {"type": "enforce_particle_translation", **support}]
+        timing = {"substep_dt": self.dt, "frame_dt": .033, "frame_num": 3000}
         points = self.reference.to("cuda:0")
-        volume = compute_grid_occupancy_volume(points, material["n_grid"], material["grid_lim"] / material["n_grid"])
+        volume = torch.from_numpy(geometry.volumes.copy()).to("cuda:0")
         self.solver = build_mpm_solver(points, volume, material, boundaries, timing)
         self.solver.enforce_particle_velocity_translation([1, 1, 1], [2, 2, 2], [0, 0, 0], 0., 1000.)
         self.grab = self.solver.particle_velocity_modifier_params[-1]
@@ -40,24 +40,8 @@ class InteractivePhysics:
         self.grab.mask = wp.from_torch(self.grab_mask, dtype=wp.int32)
         self.grab_ids = None
         self.target = None
-        hull = ConvexHull(self.reference.numpy())
-        self.vertex_ids = np.unique(hull.simplices).astype(np.int64)
-        remap = np.full(len(points), -1, dtype=np.int64)
-        remap[self.vertex_ids] = np.arange(len(self.vertex_ids))
-        faces = hull.simplices.copy()
-        xyz = self.reference.numpy()
-        for i, face in enumerate(faces):
-            normal = np.cross(xyz[face[1]]-xyz[face[0]], xyz[face[2]]-xyz[face[0]])
-            if np.dot(normal, hull.equations[i, :3]) < 0:
-                faces[i] = face[[0, 2, 1]]
-        self.vertex_ids_gpu = torch.tensor(self.vertex_ids, device="cuda:0")
-        supported = set(self.groups["lower"])
-        self.mesh = {"schema_version": "1.0", "engine": "powersim_mpm", "representation": "convex_surface_proxy",
-            "positions": self.reference[self.vertex_ids].flatten().tolist(),
-            "triangles": remap[faces].flatten().tolist(), "particle_ids": self.vertex_ids.tolist(),
-            "supported_particle_ids": [int(i) for i in self.vertex_ids if i in supported],
-            "center": [1., 1., 1.], "unit_system": "dimensionless",
-            "notice": "Exploratory PowerSim MPM physics with a browser-rendered surface proxy. Physical agreement and numerical convergence are not established."}
+        self.vertex_ids = geometry.surface_ids
+        self.vertex_ids_gpu = torch.from_numpy(self.vertex_ids.copy()).to("cuda:0")
         self.frame = 0
 
     def grab_particle(self, particle_id, target):
@@ -86,7 +70,7 @@ class InteractivePhysics:
         if self.grab_ids is not None:
             value = torch.tensor(target, dtype=torch.float32, device="cuda:0")
             delta = value-self.grab_origin
-            delta *= torch.clamp(.25 / torch.linalg.vector_norm(delta).clamp_min(1e-9), max=1.)
+            delta *= torch.clamp(self.max_drag / torch.linalg.vector_norm(delta).clamp_min(1e-9), max=1.)
             self.target = self.grab_origin+delta
 
     def release(self):
@@ -113,6 +97,7 @@ class InteractivePhysics:
 
 
 def benchmark():
+    import json
     import time
     import warp as wp
 
@@ -133,7 +118,7 @@ def benchmark():
     elapsed = time.monotonic()-started
     out = Path("/data/interactive")
     out.mkdir(exist_ok=True)
-    (out / "pillow-mesh.json").write_text(json.dumps(model.mesh))
+    (out / "gripper-pad-mesh.json").write_text(json.dumps(model.mesh))
     return {"initialization_seconds": initialization, "updates": 60, "physics_wall_seconds": elapsed,
         "updates_per_second": 60/elapsed, "simulation_seconds": 60*model.dt*model.substeps,
         "particle_count": len(model.reference), "surface_vertices": len(model.vertex_ids),

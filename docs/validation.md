@@ -1,5 +1,10 @@
 # Experiment evidence and limitations
 
+The main demo is now a configurable, procedural silicone-inspired gripper pad.
+The comparison protocol and metrics below describe the **historical pillow
+baseline only**. They are not measurements of the new pad. See the live robotics
+section below and [interaction handoff](interactive-handoff.md) for the current demo.
+
 ## Current result
 
 The backend serves a real **exploratory pillow compression-pulse comparison**.
@@ -92,7 +97,7 @@ identities, numerical-quality record and saved example ID. Source state and medi
 remain on Modal Volume `xplore-experiments`; checkpoints and large outputs are
 excluded from Git. Use the API artifact links or the documented Modal commands.
 
-Twenty-five local checks cover numeric metrics, ranking edge cases, schema responses,
+Thirty local checks cover numeric metrics, ranking edge cases, schema responses,
 request validation, saved-record recovery, partial failures, byte ranges and warning
 preservation, plus bounded interaction commands and session reservations.
 All three final MP4s decode successfully; initial/final stills were
@@ -106,17 +111,46 @@ These are HTTP client measurements, excluding browser rendering; the original GP
 runtimes above remain attached to the reused results. The latest full check is in
 `deployment-result.json`.
 
-Person A's frontend passed TypeScript checking and its Vite production build with
-the live API configuration. Automated visual/browser playback verification was
-not completed because the browser connection was unavailable; the optional native
-Chrome check was skipped. Actual browser playback and presentation should be
-checked by Person A. HTTP byte ranges and full MP4 decoding were verified.
+The frontend passed TypeScript checking and its Vite production build with live
+configuration. The user reported checking the previous workspace in a browser
+and confirmed that it worked. That is user-reported browser verification, separate
+from our native HTTP/WebSocket checks. The changed gripper-pad builder needs a
+fresh browser check. HTTP byte ranges and full MP4 decoding were verified.
 
 The independent released pillow-drop reproduction is recorded in
 `baseline-result.json` and `feasibility.md`. It established a working upstream
 pipeline; it is not the compression experiment or a physical validation result.
 
 ## Live mouse interaction
+
+### Current gripper-pad demo
+
+The default specimen is now a procedural pad with configurable width, depth,
+thickness and stiffness. Its default lattice contains 11,275 particles and the
+browser surface has 802 vertices with dense face interiors. Exact nodal volumes
+sum to the specimen volume. Preview and GPU generation share the same code and
+configuration, independent of the pillow checkpoint.
+
+The genuine deployed Balanced pad check recorded 60.75 seconds to readiness,
+30.86 received updates/s, first measured displacement after 1.10 seconds and
+maximum surface movement 0.0523 relative units. Matching geometry/material,
+non-rigid pressing, finite state, release, reset and stop passed. The record is
+`robotics-verification-gripper_pad-balanced.json`. These are native WebSocket
+measurements, not browser performance measurements.
+
+A firm pad at minimum thickness 0.16 and E multiplier 2.0 also passed the same
+checks. A separately configured 0.8 × 0.5 × 0.4 block at stiffness 1.3× passed
+geometry/material matching, non-rigid deformation and reset at 23.86 received
+updates/s. Their `robotics-verification-*.json` records are retained. This checks
+the new-test configuration path, not every possible allowed dimension combination.
+
+This is a generic elastic model inspired by silicone applications in robotics,
+not a calibrated commercial silicone. Numerical convergence, real dimensions,
+forces, contact/friction performance and physical agreement remain unverified.
+AI/voice, saving mouse experiments and public frontend hosting are out of scope.
+The local frontend still uses Modal GPU physics and internet access.
+
+### Historical pillow interaction checks
 
 The main frontend also provides a live mouse-grab workspace. A deployed native
 WebSocket check verified real GPU non-rigid deformation, finite positions,
@@ -129,7 +163,8 @@ The browser draws a simplified 207-vertex convex surface from the 25,104 simulat
 particles. This is a graphics proxy, not a neural rendering. Interactive gestures
 have not undergone numerical refinement or physical comparison and do not create
 the repeatable comparison's results. Native streaming tests do not verify browser
-appearance or pointer behavior; those visual checks remain outstanding.
+appearance or pointer behavior. The user subsequently confirmed the previous
+workspace worked in their browser; this does not verify the changed pad builder.
 
 ## Costs
 

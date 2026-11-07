@@ -1,7 +1,6 @@
 """Bounded mouse-interaction sessions; provider credentials remain server-side."""
 
 import asyncio
-import json
 import logging
 from pathlib import Path
 import secrets
@@ -10,15 +9,11 @@ import time
 import modal
 from fastapi import HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict
-from typing import Literal
-
+from backend.geometry import InteractiveConfig, build_geometry
 from backend.interactive import validate_command
 
 
-class SessionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    candidate_id: Literal["flexible", "balanced", "firm"] = "balanced"
+SessionRequest = InteractiveConfig
 
 
 def install_interactive_routes(app, *, claims, volume, stream_function):
@@ -28,10 +23,11 @@ def install_interactive_routes(app, *, claims, volume, stream_function):
 
     @app.get("/v1/interactive/mesh")
     def mesh():
-        path = Path("/data/interactive/pillow-mesh.json")
-        if not path.exists():
-            raise HTTPException(503, "Interactive geometry is still being prepared")
-        return json.loads(path.read_text())
+        return build_geometry().mesh
+
+    @app.post("/v1/interactive/preview")
+    def preview(body: SessionRequest):
+        return build_geometry(body.resolved()).mesh
 
     @app.post("/v1/interactive/sessions", status_code=201)
     def session(body: SessionRequest):
@@ -41,10 +37,10 @@ def install_interactive_routes(app, *, claims, volume, stream_function):
         identifier = secrets.token_hex(16)
         for slot in range(20):
             if claims.put(f"interactive-credit-v1-{slot}", identifier, skip_if_exists=True):
-                value = {"candidate_id": body.candidate_id, "created_at": time.time(), "expires": time.time()+180}
+                value = {"candidate_id": body.candidate_id, "configuration": body.resolved(), "created_at": time.time(), "expires": time.time()+180}
                 claims.put("interactive-session:"+identifier, value)
                 return {"session_id": identifier, "websocket_url": f"/v1/interactive/sessions/{identifier}/stream",
-                    "max_live_seconds": 90, "remaining_starts": 19-slot,
+                    "max_live_seconds": 90, "remaining_starts": 19-slot, "configuration": body.resolved(),
                     "notice": "Exploratory live MPM physics; the browser surface is an approximate visualization."}
         raise HTTPException(429, "The demo's bounded live-session allowance has been used")
 
@@ -83,7 +79,7 @@ def install_interactive_routes(app, *, claims, volume, stream_function):
 
                 async def send():
                     try:
-                        async for packet in stream_function.remote_gen.aio(commands, value["candidate_id"]):
+                        async for packet in stream_function.remote_gen.aio(commands, value["candidate_id"], value.get("configuration")):
                             if packet["type"] == "ready":
                                 ready.set()
                             await websocket.send_json(packet)

@@ -1,16 +1,29 @@
 # Xplore
 
-Grab and deform a soft object, then compare material scenarios to decide which
-physical prototype to test next.
+Create a silicone-inspired robot gripper pad and explore its deformation with
+your mouse.
 The project scope and role split are in [plan.md](plan.md).
 
-The main frontend includes live mouse interaction with a GPU PowerSim MPM solver,
-plus a genuine three-candidate compression-pulse comparison, persistent experiment
-records, synchronized videos, measured time series and a deterministic shortlist.
-The shared v1.0 experiment schema is unchanged. Live gestures are temporary and
-separate from the repeatable recorded comparison.
+The main test is a procedural gripper pad mounted on a fixed base. **New experiment**
+opens a fresh test: choose a gripper pad or material block, edit width/depth/thickness
+and stiffness, preview the geometry, then start live MPM physics. Geometry and
+material parameters are sent to the actual GPU solver. Tests are temporary; no
+mouse-session saving, AI or voice integration is planned for this build.
 
-**These results are exploratory.** Halving the timestep changed Balanced's peak by
+Run the frontend locally at `http://127.0.0.1:5173/` with the live configuration
+in [docs/api-handoff.md](docs/api-handoff.md). The local browser still uses Modal
+for GPU physics and requires internet access. Public frontend hosting is out of
+scope. The user confirmed the previous pillow workspace worked in their browser;
+the changed pad workspace needs a fresh browser check.
+
+The pad is **silicone-inspired**, using a generic elastic model and relative
+simulator units. It is not a calibrated prediction for Ecoflex, Dragon Skin or any
+commercial silicone. Physical and numerical validation remain incomplete.
+
+The older genuine pillow comparison, videos, metrics and saved records remain
+under **Pillow baseline archive**. Their frozen v1.0 experiment schema is unchanged.
+
+**The archived pillow results are exploratory.** Halving the timestep changed Balanced's peak by
 11.8% (1.46 percentage points), so the 5% convergence goal was not met. Every
 shortlist is provisional and physical validation remains pending.
 
@@ -22,13 +35,15 @@ shortlist is provisional and physical validation remains pending.
 - Person A integration: [docs/api-handoff.md](docs/api-handoff.md).
 - Experiment and evidence: [docs/validation.md](docs/validation.md).
 
+These measurements belong to the archived pillow, not the new gripper pad:
+
 | Scenario | Stiffness multiplier | Peak normalized compression |
 | --- | --- | --- |
 | Flexible | 0.5 | 15.54% |
 | Balanced | 1.0 | 12.41% |
 | Firm | 2.0 | 9.70% |
 
-Only the tested reference load multiplier 1.0 is enabled. These are hypothetical
+In the archive, only the tested reference load multiplier 1.0 is enabled. These are hypothetical
 parameter scenarios, not sourced or validated commercial materials.
 
 ## Local backend checks

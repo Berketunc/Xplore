@@ -1,13 +1,15 @@
 # Xplore: Virtual Material Experiments
 
-> Implementation update, 7 November 2026: the user clarified that direct mouse
-> grabbing, pushing and deformation is the primary interaction. The live frontend
-> now opens that GPU-backed workspace and retains the repeatable experiment flow
-> in a Recorded comparison tab. Person B also integrated this frontend workspace
-> at the user's request. See [the live interaction handoff](docs/interactive-handoff.md)
-> and [current evidence](docs/validation.md). The sections below preserve the
-> original plan; live gestures currently are temporary and do not create saved
-> comparison metrics. Numerical and physical validation remain incomplete.
+> Current agreed scope, 7 November 2026: the primary test is a silicone-inspired
+> robot gripper pad, with a New experiment flow for procedural geometry and custom
+> stiffness. Run the frontend locally; Modal continues to supply GPU physics.
+> AI/voice, mouse-session saving and public frontend hosting have been dropped.
+> The user confirmed the previous browser workspace worked. The changed pad and
+> builder need a fresh check. Pillow comparisons remain historical evidence in
+> the Pillow baseline archive, not gripper-pad measurements. See
+> [the interaction handoff](docs/interactive-handoff.md) and
+> [current evidence](docs/validation.md). Remaining sections preserve original
+> background and milestones where applicable; physical validation is incomplete.
 
 ## 1. Project summary
 
@@ -52,7 +54,7 @@ A candidate meeting that simulated constraint is a screening result. Real cushio
 
 ### What makes the project distinctive
 
-The contribution is the accessible experiment workflow around a research simulator: consistent comparisons, traceable measurements, explicit assumptions, and an assistant grounded in actual experiment results. Attribute the underlying simulation method and released assets to their original authors.
+The contribution is the accessible experiment workflow around a research simulator: configurable specimens, mouse interaction, traceable baseline measurements and explicit assumptions. Attribute the underlying simulation method and released assets to their original authors.
 
 ## 3. Success criteria and scope
 
@@ -68,12 +70,10 @@ The contribution is the accessible experiment workflow around a research simulat
 - [ ] Visible assumptions and evidence status.
 - [ ] Correct handling of queued, running, completed, and failed jobs.
 - [ ] A reusable saved experiment and a genuine cached example for the demo.
-- [ ] A deployed app, repository, write-up, and submission video.
+- [ ] A locally runnable app, repository, write-up, and submission video. Public frontend hosting is excluded.
 
 ### P1: Add after the full P0 flow works
 
-- [ ] An AI assistant that retrieves the experiment record before explaining it.
-- [ ] ElevenLabs spoken explanations with an equivalent visible text explanation.
 - [ ] JSON/CSV export of inputs, measurements, assumptions, and results.
 - [ ] A second load setting to demonstrate a meaningful change in outcomes.
 - [ ] A matched physical validation experiment, if the geometry and loading can be reproduced properly.
@@ -116,7 +116,7 @@ Start with three hypothetical scenarios named Flexible, Balanced, and Firm. Thes
 
 Person B chooses numerically stable stiffness settings around a working baseline. Multipliers such as 0.5, 1.0, and 2.0 are an initial experiment proposal, subject to numerical checks. Keep every other variable fixed in the first comparison. If the numerical integration requires a smaller timestep for a stiffer scenario, rerun all candidates with the same suitable timestep.
 
-Actual material names require a source, units, a suitable constitutive model, and a mapping to the simulator's dimensional assumptions. The assistant must retain these distinctions.
+Actual material names require a source, units, a suitable constitutive model, and a mapping to the simulator's dimensional assumptions. Result explanations must retain these distinctions.
 
 ### Main user journey
 
@@ -127,7 +127,7 @@ Actual material names require a source, units, a suitable constitutive model, an
 5. Xplore displays job states and then the result videos and measured deformation.
 6. It identifies candidates that meet the stated simulation target.
 7. Among qualifying candidates with complete cost data, it highlights the lowest user-provided prototype cost.
-8. The assistant explains the tradeoff using the experiment record.
+8. A deterministic explanation describes the tradeoff using the experiment record.
 9. The designer saves the record and selects the next physical test.
 
 If no candidate meets the constraint, show that outcome and suggest a bounded follow-up experiment. Avoid manufacturing an automatic winner.
@@ -173,7 +173,7 @@ PowerSim exposes per-frame positions, but the existing export occurs after stepp
 4. When costs are incomplete, show the deformation comparison and explain that a complete cost ranking is unavailable.
 5. If any requested candidate failed, describe any shortlist as provisional.
 
-The backend calculates these decisions. The assistant explains them. It may suggest another supported experiment but may not change the rule or invent measurements.
+The backend calculates these decisions. The result explanation describes them without changing the rule or inventing measurements.
 
 ### Impact metrics
 
@@ -200,19 +200,19 @@ flowchart LR
     GPU --> STORE[Artifacts and experiment records]
     STORE --> API
     API --> F
-    AGENT[Optional ElevenLabs agent] -->|Read experiment summary| API
-    AGENT --> F
+    F -->|Geometry and mouse commands| LIVE[Live MPM session]
+    LIVE -->|Particle surface updates| F
 ~~~
 
 ### Components
 
 | Component | Choice | Purpose | Owner |
 | --- | --- | --- | --- |
-| Browser app | Lovable-generated React/TypeScript, edited locally as needed | Setup, results, assumptions, saved example | A |
+| Browser app | Local Vite/React/TypeScript | Gripper-pad builder, mouse interaction, pillow archive | A; B integrated live workspace |
 | API | FastAPI on Modal CPU | Validate input, submit jobs, return state and artifacts | B |
 | Worker | PowerSim in a pinned Linux CUDA environment on Modal | Execute approved experiments | B |
 | Storage | Modal Volume plus an HTTP artifact route | Checkpoints, manifests, results, browser-readable videos | B |
-| Assistant | ElevenLabs agent with a read-only experiment tool, if available | Explain measured results | A; B supplies tool endpoint |
+| Result explanation | Deterministic text from archived experiment records | Explain baseline measurements and shortlist | A |
 | Data contract | JSON fixtures plus shared schema | Allow A and B to work independently | Joint; B owns wire format |
 
 Modal supports remote CUDA computation and asynchronous job submission with polling. Store persistent data separately from transient workers. The browser receives an experiment ID immediately and polls for updates. [CUDA](https://modal.com/docs/guide/cuda), [job processing](https://modal.com/docs/guide/job-queue), [Volumes](https://modal.com/docs/guide/volumes)
@@ -220,7 +220,7 @@ Modal supports remote CUDA computation and asynchronous job submission with poll
 ### API priorities
 
 - Modal, PowerSim, and the frontend are the core stack.
-- ElevenLabs is the first optional integration once real results flow end to end.
+- AI/voice and saving mouse experiments are explicitly excluded from this build.
 - Firecrawl, n8n, and Yubico are future integrations unless a finished core leaves clear time for a specific useful addition.
 
 ### GPU setup
@@ -252,7 +252,7 @@ Freeze the first contract before building independent UI and worker implementati
 | GET /v1/catalog | Supported scene, protocol, candidates, bounds, units | Catalog JSON |
 | POST /v1/experiments | Validate and schedule a comparison | HTTP 202, experiment ID, queued status |
 | GET /v1/experiments/{id} | Read state and results | Status, candidate runs, measurements, assumptions |
-| GET /v1/experiments/{id}/summary | Compact read-only assistant context | Results, selection rule, evidence state |
+| GET /v1/experiments/{id}/summary | Compact read-only result summary | Results, selection rule, evidence state |
 | GET /v1/artifacts/{id}/{filename} | Serve an approved result file | Video, image, JSON, or CSV |
 
 The catalog is authoritative. Compression is exposed only after it works. If the supported protocol is deflection, the catalog and UI must describe deflection consistently.
@@ -313,7 +313,7 @@ Use null for unavailable measurements. Illustrative fixtures use evidence_status
 
 ## 8. Work ownership
 
-**Person A owns the product interface, assistant experience, user evidence, and presentation. Person B owns simulation, cloud execution, measurements, and the API.**
+**Person A owns the product interface, result explanation, user evidence, and presentation. Person B owns simulation, cloud execution, measurements, and the API.**
 
 The critical handoff is the API contract. The first integration milestone is one real result appearing in the frontend. Keep shared-file changes explicit so work does not collide.
 
@@ -326,9 +326,9 @@ The critical handoff is the API contract. The first integration milestone is one
 | A3 | Build asynchronous states | Queued, running, failed, partial, and completed screens work; duplicate run clicks are prevented | Fixtures |
 | A4 | Connect the real API | A browser-submitted experiment shows one genuine returned video and metric | B4 |
 | A5 | Complete comparison and explanation | Real three-candidate data, target labels, assumptions, cached label, and deterministic explanation are visible | B3/B4 |
-| A6 | Add the optional ElevenLabs assistant | Agent retrieves the current experiment summary and explains it; text path remains usable | Stable summary endpoint and account access |
+| A6 | Removed from scope | AI and voice are not planned for this build | User decision |
 | A7 | Collect user evidence and record footage | Two or three short user observations if available; optional matched-test footage | Working interaction |
-| A8 | Deploy and package the project | Published frontend, screenshots, two-minute video, write-up, and submission metadata | Working P0 |
+| A8 | Package the local project | Launch instructions, screenshots, two-minute video, write-up, and submission metadata | Working core |
 
 **First actions for Person A**
 
@@ -362,7 +362,7 @@ The critical handoff is the API contract. The first integration milestone is one
 - At the first feasibility gate, freeze the supported scene and loading protocol.
 - Integrate one real candidate before polishing optional features.
 - Review the shortlist against raw results together.
-- Rehearse one full demo together using the exact deployed application.
+- Rehearse one full demo together using the exact local application and live GPU worker.
 
 ## 9. Hackathon schedule
 
@@ -375,8 +375,8 @@ Plan prepared on **7 November 2026, approximately 13:05 Europe/London (GMT)**. T
 | 14:00-14:45 | State handling, comparison UI, API client | Freeze loading/metric, export baseline, run first variants | Gate 2: one genuine metric and playable clip |
 | 14:45-15:15 | Integrate live API | Submit/poll/artifact routes, persistent state | Browser-to-result flow works |
 | 15:15-16:00 | Complete comparison, gather quick user feedback | Three candidates, numeric checks, cache, optional matched-test preparation | Gate 3: complete P0 journey |
-| 16:00-16:30 | Assistant or voice if ready; otherwise polish core | Physical comparison if feasible; otherwise benchmark and stability | Evidence and claims frozen |
-| 16:30-17:00 | Deploy, record application footage, write submission | Final backend deployment, export artifacts and source attribution | Feature freeze; demo-ready version |
+| 16:00-16:30 | Polish core interaction and result explanations | Physical comparison if feasible; otherwise benchmark and stability | Evidence and claims frozen |
+| 16:30-17:00 | Run locally, record application footage, write submission | Final backend deployment, export artifacts and source attribution | Feature freeze; demo-ready version |
 | 17:00-17:30 | Assemble video, publish required video link, submit | Rehearse, verify deployment, assist final submission | Target submission complete |
 | 17:30-18:00 | Fix submission or access issues only | Fix blocking deployment issues only | Final deadline buffer |
 
@@ -404,29 +404,13 @@ Write a manifest, time-series JSON/CSV, still image, and MP4 for each completed 
 
 Build a cache key from scene/checkpoint identity, material assignment, load protocol, numerical settings, camera/render settings, upstream commit, and Xplore runner version. Include any random seed that affects the result. Display a cached result immediately when the key matches, while retaining its actual execution metadata.
 
-## 11. Assistant behavior
+## 11. Result explanations
 
-The assistant's useful task is explaining a reproducible experiment and helping the designer choose the next supported test.
-
-### Minimum behavior
-
-Person A can first render a deterministic explanation assembled from the measured results and selection rule. This is a functional baseline and should be described accurately in the demo.
-
-### AI integration
-
-Use an ElevenLabs agent with its configured language model and a read-only get_experiment_summary tool. Verify that the provided account includes agent/model access; a speech-only entitlement does not establish that. A separately available text model can use the same summary endpoint. [ElevenLabs webhook tools](https://elevenlabs.io/docs/eleven-agents/customization/tools/webhook-tools)
-
-The agent should:
-
-1. Fetch the current experiment summary before answering result-specific questions.
-2. Describe the actual geometry, loading, units, and evidence status.
-3. Compare observed metrics and user-provided costs.
-4. Explain the deterministic shortlist.
-5. Identify missing information and propose one supported next test.
-
-Suggested demo question: "Which option should I physically test next, and what assumptions could change that choice?"
-
-Numeric values and ranking must come from the structured record. Clearly distinguish a synthetic material scenario from a tested physical material. Keep the report usable when voice or the language model is unavailable. Retain transcripts or visible text so audio is optional.
+The pillow archive retains a deterministic explanation assembled from its measured
+results and selection rule. AI and voice integrations have been dropped. The new
+live pad workspace shows its configuration and limitations; temporary mouse tests
+do not create saved metrics or inherit the pillow's shortlist. Numeric values and
+rankings must come from the record that actually produced them.
 
 ## 12. Physical validation plan
 
@@ -469,7 +453,7 @@ A sponge filmed separately from an unrelated pillow simulation is a physical ill
 
 ### Person A: Application checks
 
-- [ ] A real submitted experiment reaches a terminal state in the deployed browser app.
+- [ ] A real submitted experiment reaches a terminal state in the local browser app.
 - [ ] All videos load; play/pause/replay and comparison timing are usable.
 - [ ] Assumptions, unit system, engine, cached state, and evidence status remain visible.
 - [ ] Illustrative fixtures are excluded from the production demo path.
@@ -494,7 +478,6 @@ A sponge filmed separately from an unrelated pillow simulation is a physical ill
 | Runs are too slow for a live demo | Use genuine, labelled cached runs for the main comparison; show live submission separately if feasible | B supplies; A presents |
 | A candidate becomes unstable | Reduce the shared timestep or supported parameter range, rerun, and expose only stable scenarios | B |
 | No matched physical specimen exists | Retain simulation_only status and show the documented next validation experiment | Joint |
-| Agent or voice integration is slow | Use the deterministic result explanation and finish P0 | A |
 | The clock reaches 16:30 with missing P0 work | Freeze optional features; complete the existing end-to-end journey | Joint |
 
 ### Analytical fallback
@@ -543,7 +526,7 @@ Person A changes frontend and presentation files. Person B changes backend, simu
 | 0:00-0:15 | The user problem and Xplore's decision-support goal | A |
 | 0:15-0:35 | Prepared object, three scenarios, common load, and user constraint | A |
 | 0:35-1:00 | Real result videos and numerical comparison | B |
-| 1:00-1:20 | Shortlist, cost assumptions, and assistant explanation | A |
+| 1:00-1:20 | New specimen/material configuration and temporary live test | A |
 | 1:20-1:40 | Physical comparison if available; otherwise repeatability and measured runtime | B |
 | 1:40-2:00 | Evidence achieved, potential impact, and next validation step | A |
 
@@ -557,7 +540,7 @@ Replace the last sentence with the actual held-out comparison and measured error
 
 - [ ] Xplore title and one-sentence description.
 - [ ] The target user and specific decision supported.
-- [ ] Deployed app and repository links.
+- [ ] Local launch instructions, existing backend and repository links.
 - [ ] Both team members added to the submission and repository.
 - [ ] A video within the two-minute limit and its required link.
 - [ ] A clear description of what A and B implemented.
@@ -587,6 +570,6 @@ Technical capabilities were checked against these sources on 7 November 2026. Th
 - [CUDA on Modal](https://modal.com/docs/guide/cuda)
 - [Modal asynchronous jobs](https://modal.com/docs/guide/job-queue)
 - [Modal persistent storage](https://modal.com/docs/guide/volumes)
-- [ElevenLabs agent webhook tools](https://elevenlabs.io/docs/eleven-agents/customization/tools/webhook-tools)
+- [Soft Robotics Toolkit silicone actuator materials](https://softroboticstoolkit.com/book/pneunets-bill-materials)
 - [GreatUniHack event schedule](https://greatunihack.com/)
 - [GreatUniHack submission requirements](https://greatunihack-2026.devpost.com/)

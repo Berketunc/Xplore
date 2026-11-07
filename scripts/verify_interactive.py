@@ -14,13 +14,23 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("base_url")
     parser.add_argument("--candidate", choices=("flexible", "balanced", "firm"), default="balanced")
+    parser.add_argument("--object-type", choices=("gripper_pad", "material_block"), default="gripper_pad")
+    for name in ("width", "depth", "thickness", "stiffness_multiplier"):
+        parser.add_argument("--"+name.replace("_", "-"), type=float)
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
+    configuration = {"candidate_id": args.candidate, "object_type": args.object_type}
+    for name in ("width", "depth", "thickness", "stiffness_multiplier"):
+        if getattr(args, name) is not None:
+            configuration[name] = getattr(args, name)
     with httpx.Client(base_url=base, timeout=30) as client:
         assert client.get("/sandbox").status_code == 200
-        mesh = client.get("/v1/interactive/mesh").json()
+        preview = client.post("/v1/interactive/preview", json=configuration)
+        assert preview.status_code == 200, preview.text
+        mesh = preview.json()
         assert len(mesh["triangles"]) > 0
-        created = client.post("/v1/interactive/sessions", json={"candidate_id": args.candidate})
+        assert mesh["object_type"] == args.object_type
+        created = client.post("/v1/interactive/sessions", json=configuration)
         assert created.status_code == 201, created.text
         session = created.json()
     url = base.replace("https://", "wss://").replace("http://", "ws://") + session["websocket_url"]
@@ -31,14 +41,17 @@ def main():
             if packet["type"] == "error":
                 raise RuntimeError(packet["message"])
             if packet["type"] == "ready":
+                assert packet["mesh"]["configuration"] == mesh["configuration"]
+                assert packet["mesh"]["particle_ids"] == mesh["particle_ids"]
                 initial = packet["mesh"]["positions"]
                 ready_seconds = time.monotonic()-connected
                 break
         count = len(initial)//3
-        index = max(range(count), key=lambda i: initial[i*3+2])
+        top = max(initial[2::3])
+        index = min(range(count), key=lambda i: math.dist(initial[i*3:i*3+3], [1,1,top]))
         point = initial[index*3:index*3+3]
         target = point.copy()
-        target[2] -= .12
+        target[2] -= min(.12, mesh["configuration"]["thickness"]*.3)
         socket.send(json.dumps({"type": "grab", "point": point, "target": target}))
         sent = time.monotonic()
         max_displacement = 0.
@@ -78,10 +91,12 @@ def main():
     result = {"base_url": base, "candidate_id": args.candidate, "session_id": session["session_id"], "ready_seconds": ready_seconds,
         "received_updates_per_second": fps, "first_motion_seconds": first_motion,
         "max_surface_displacement_mpm": max_displacement, "reset_verified": reset_ok,
-        "surface_vertices": count, "physics": "PowerSim bundled MPM; browser display uses a convex surface proxy",
-        "checks": ["public WebSocket", "real GPU grab deformation", "non-rigid motion", "finite positions", "release", "reset", "stop"]}
-    suffix = "" if args.candidate == "balanced" else "-"+args.candidate
-    Path(f"docs/interactive-verification{suffix}.json").write_text(json.dumps(result,indent=2)+"\n")
+        "surface_vertices": count, "configuration": mesh["configuration"],
+        "remaining_starts_after_reservation": session["remaining_starts"],
+        "physics": "PowerSim bundled PhysGaussian MPM; procedural geometry and a structured surface proxy",
+        "checks": ["CPU geometry preview", "GPU matches configured geometry/material", "public WebSocket", "real GPU grab deformation", "non-rigid motion", "finite positions", "release", "reset", "stop"]}
+    suffix = args.object_type+"-"+args.candidate
+    Path(f"docs/robotics-verification-{suffix}.json").write_text(json.dumps(result,indent=2)+"\n")
     print(json.dumps(result,indent=2))
 
 

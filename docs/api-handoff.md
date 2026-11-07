@@ -2,7 +2,7 @@
 
 ## Live configuration
 
-Use these values in `frontend/.env.local` or the frontend hosting environment:
+Use these values in `frontend/.env.local` for the local app:
 
 ```dotenv
 VITE_API_MODE=live
@@ -13,11 +13,12 @@ VITE_EXAMPLE_EXPERIMENT_ID=xplore-6c8a5838ec8c4202b55abc9725e98ee6
 These values contain no credentials. Keep provider credentials server-side.
 The shared v1.0 schema and existing fixtures are unchanged.
 
-The main frontend now has **Grab and deform** and **Recorded comparison** tabs.
-Live mode opens the interactive workspace unless a saved experiment is in the
-URL. The new workspace, mouse protocol and GPU/session limits are documented in
-[interactive-handoff.md](interactive-handoff.md). Live gestures do not change the
-recorded comparison's metric or ranking.
+The main frontend has **New experiment**, **Grab and deform** and
+**Pillow baseline archive**. New experiments configure a procedural gripper pad or
+material block with dimensions and custom stiffness. Live mode opens the pad by
+default. The builder and bounded GPU protocol are documented in
+[interactive-handoff.md](interactive-handoff.md). Temporary live gestures do not
+produce the archive's metrics or rankings. Public frontend hosting is out of scope.
 
 ## Actual experiment
 
@@ -80,9 +81,8 @@ IDs, duplicate candidates and unsupported loads are rejected before any GPU work
 Only registered simulation inputs can recover a missing cache; recovery is
 claimed once per candidate to bound GPU use.
 
-## Assistant integration
+## Result summaries
 
-An optional `get_experiment_summary` tool can call the summary endpoint with the
-current experiment ID. Result-specific answers must fetch that record and retain
-the numerical-sensitivity and physical-validation caveats. A voice/model service
-is not configured by the backend; the existing rule-based text path remains usable.
+The summary endpoint remains available for the archived recorded experiments.
+AI/voice integration has been dropped; the frontend retains its deterministic
+record-based explanation.
