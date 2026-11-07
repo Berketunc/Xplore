@@ -1,6 +1,6 @@
-# Shared API contract (DRAFT v1.0)
+# Shared API contract (FROZEN v1.0)
 
-Drafted by Person A from plan.md §5 and §7. **Person B owns the wire format.** Review, edit and say "frozen" when it's agreed.
+Drafted by Person A from plan.md §5 and §7 and approved by Person B on 7 Nov 2026. **Person B owns the wire format.** Agree any breaking change together before merging it.
 
 | File | What it is |
 | --- | --- |

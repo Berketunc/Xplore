@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Berketunc/Xplore/shared/experiment.schema.json",
   "title": "Xplore API contract",
-  "description": "DRAFT v1.0 (Person A draft, pending Person B review; B owns the wire format). Each route's body is one of the $defs below. Extra properties are allowed so the backend can add fields without breaking the frontend. Use null (never sample values) for unavailable measurements.",
+  "description": "FROZEN v1.0 (approved by Person B; B owns the wire format; agree breaking changes together). Each route's body is one of the $defs below. Extra properties are allowed so the backend can add fields without breaking the frontend. Use null (never sample values) for unavailable measurements.",
   "$defs": {
     "SchemaVersion": { "const": "1.0" },
 
