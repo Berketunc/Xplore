@@ -111,10 +111,15 @@ seconds), ended or error. The archived experiment's frozen v1.0 schema is unchan
 ## Limits and evidence
 
 Only one live worker can run at a time. Each session allows 90 live seconds, a
-180-second worker timeout and 30 seconds of idle retention. There are 20 total
+180-second worker timeout and 30 seconds of idle retention. There are 25 total
 session reservations in the persistent allowance, including development checks
 and failed startups; redeploying does not reset it. Busy returns 409 and exhausted
 allowance 429. Previewing and editing geometry do not reserve a GPU session.
+
+The original 20 starts were exhausted before the presentation. Five additional
+starts were added after Modal reported USD 1.84245273 in Xplore usage at the
+pre-presentation check, within the conservative USD 5 operational allowance.
+Existing reservations remain recorded; this extension does not reset the counter.
 
 GPU allocation falls back across L4/L40S/A10/T4. Initial allocation/kernel
 compilation can take about a minute; a 100-second readiness deadline gives a
@@ -139,7 +144,7 @@ Run a bounded deployed check (consumes one GPU reservation):
 backend/.venv/bin/python scripts/verify_interactive.py https://tnberkec--xplore-simulation-api.us-east.modal.run
 ```
 
-Thirty local tests cover the archived API/metrics, commands, session bounds,
+Thirty-one local tests cover the archived API/metrics, commands, session bounds,
 configuration validation, exact volume, closed outward-wound surface topology,
 and propagation of geometry/material settings. The user confirmed that the prior
 pillow browser workspace worked. A fresh browser check is needed for the changed

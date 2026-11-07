@@ -51,11 +51,22 @@ class SessionAllowanceTests(unittest.TestCase):
         self.client = TestClient(app)
 
     def test_session_allowance_is_bounded_without_starting_gpu(self):
-        for _ in range(20):
+        for _ in range(25):
             response = self.client.post("/v1/interactive/sessions", json={"candidate_id": "balanced"})
             self.assertEqual(response.status_code, 201)
             self.assertEqual(response.json()["max_live_seconds"], 90)
         self.assertEqual(self.client.post("/v1/interactive/sessions", json={"candidate_id": "balanced"}).status_code, 429)
+
+    def test_presentation_allowance_preserves_used_slots_and_adds_only_five(self):
+        for slot in range(20):
+            self.claims.values[f"interactive-credit-v1-{slot}"] = "already-used"
+        for remaining in range(4, -1, -1):
+            response = self.client.post("/v1/interactive/sessions", json={"candidate_id":"balanced"})
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.json()["remaining_starts"], remaining)
+        self.assertEqual(self.client.post("/v1/interactive/sessions", json={}).status_code, 429)
+        for slot in range(20):
+            self.assertEqual(self.claims.values[f"interactive-credit-v1-{slot}"], "already-used")
 
     def test_active_worker_does_not_consume_a_new_slot(self):
         self.claims.values["interactive-active"] = {"id": "active", "expires": time.time()+90}

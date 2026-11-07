@@ -14,6 +14,9 @@ from backend.interactive import validate_command
 
 
 SessionRequest = InteractiveConfig
+# Five bounded presentation starts added after checking reported usage.
+# Existing claims are retained; redeployment never resets the counter.
+MAX_SESSION_STARTS = 25
 
 
 def install_interactive_routes(app, *, claims, volume, stream_function):
@@ -35,12 +38,12 @@ def install_interactive_routes(app, *, claims, volume, stream_function):
         if active and active["expires"] > time.time():
             raise HTTPException(409, "The live worker is busy; try again when the current session ends")
         identifier = secrets.token_hex(16)
-        for slot in range(20):
+        for slot in range(MAX_SESSION_STARTS):
             if claims.put(f"interactive-credit-v1-{slot}", identifier, skip_if_exists=True):
                 value = {"candidate_id": body.candidate_id, "configuration": body.resolved(), "created_at": time.time(), "expires": time.time()+180}
                 claims.put("interactive-session:"+identifier, value)
                 return {"session_id": identifier, "websocket_url": f"/v1/interactive/sessions/{identifier}/stream",
-                    "max_live_seconds": 90, "remaining_starts": 19-slot, "configuration": body.resolved(),
+                    "max_live_seconds": 90, "remaining_starts": MAX_SESSION_STARTS-1-slot, "configuration": body.resolved(),
                     "notice": "Exploratory live MPM physics; the browser surface is an approximate visualization."}
         raise HTTPException(429, "The demo's bounded live-session allowance has been used")
 

@@ -1,15 +1,15 @@
 {
   "currency": "USD",
-  "reported_cost": "1.54213130",
+  "reported_cost": "1.84245273",
   "resource_costs": {
     "A10G": "0.10433597",
-    "CPU": "0.17857823",
-    "L40S": "1.12284809",
-    "Memory": "0.08331072",
-    "Network Egress": "0.00126919",
+    "CPU": "0.21375456",
+    "L40S": "1.37868654",
+    "Memory": "0.09258302",
+    "Network Egress": "0.00130354",
     "T4": "0.05178910"
   },
-  "snapshot_saved_at": "2026-11-07T17:11:28.479258+00:00",
-  "application_count": 17,
-  "note": "Modal-reported Xplore usage returned by today's billing report. Current/in-flight usage or billing updates may not be fully reflected; this is not the final invoice."
+  "snapshot_saved_at": "2026-11-07T19:03:18.600243+00:00",
+  "application_count": 18,
+  "note": "Modal-reported Xplore usage returned by today's billing report before the presentation readiness check. Current/in-flight usage or billing updates may not be fully reflected; this is not the final invoice."
 }
