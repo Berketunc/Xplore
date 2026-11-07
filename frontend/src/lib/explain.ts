@@ -66,7 +66,7 @@ export function explainExperiment(experiment: Experiment, test: TestDefinition |
       "Run a bounded follow-up within the supported settings, such as a lower load multiplier or a firmer scenario, or review whether the target reflects the product requirement.";
   } else if (recommended) {
     const entry = selection.candidates.find((c) => c.candidate_id === recommended);
-    headline = `${selection.provisional ? "Provisional shortlist: " : ""}${label(recommended)} is the lowest-cost candidate that meets the target.`;
+    headline = `${label(recommended)} is the lowest-cost candidate that meets the target.`;
     const others = selection.shortlist.filter((id) => id !== recommended).map(label);
     paragraphs.push(
       `Among qualifying candidates, ${label(recommended)} has the lowest prototype cost you entered (${gbp(entry?.prototype_cost_gbp)})` +
@@ -80,6 +80,13 @@ export function explainExperiment(experiment: Experiment, test: TestDefinition |
     );
     nextStep = "Add prototype costs for the qualifying candidates to get a cost-based shortlist, or choose a next physical test from the qualifying set.";
   }
+
+  const numericalNote = experiment.numerical_quality?.note;
+  if (numericalNote) paragraphs.push(`Numerical check: ${numericalNote}`);
+  else if (selection.provisional && notEvaluated.length === 0 && selection.notes.length) {
+    paragraphs.push(`Why this is provisional: ${selection.notes.join(" ")}`);
+  }
+  if (selection.provisional) headline = `Provisional: ${headline}`;
 
   paragraphs.push(
     experiment.fixture || experiment.evidence_status === "illustrative"

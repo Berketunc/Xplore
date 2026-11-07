@@ -161,6 +161,15 @@ export interface Experiment {
   config_hash?: string | null;
   error?: RunError | null;
   physical_validation?: Record<string, unknown>;
+  /** Additive backend field: numerical sensitivity of the reported metric. */
+  numerical_quality?: NumericalQuality;
+}
+
+export interface NumericalQuality {
+  status: string;
+  note?: string;
+  timestep_relative_change?: number;
+  timestep_goal_relative_change?: number;
 }
 
 export interface ApiErrorBody {

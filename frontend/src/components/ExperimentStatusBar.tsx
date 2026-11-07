@@ -47,6 +47,11 @@ export function ExperimentStatusBar({ experiment, test, pollError }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <EvidenceBadge status={experiment.evidence_status} fixture={experiment.fixture} />
+          {experiment.numerical_quality && experiment.numerical_quality.status !== "converged" && (
+            <Pill tone="warning">
+              <span aria-hidden>⚠</span> Exploratory · {experiment.numerical_quality.status.replace(/_/g, " ")}
+            </Pill>
+          )}
           <Pill>
             ID <span className="font-mono">{experiment.experiment_id}</span>
           </Pill>

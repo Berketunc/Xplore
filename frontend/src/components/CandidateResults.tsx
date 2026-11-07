@@ -95,7 +95,7 @@ function CandidateCard({ run, test, entry, recommended, fixture, register }: Car
         {recommended && <Pill tone="good">Shortlist #1</Pill>}
       </header>
 
-      <div className="mt-3 aspect-video overflow-hidden rounded-lg bg-surface-2">
+      <div className="mt-3 aspect-square overflow-hidden rounded-lg bg-surface-2">
         {done && videoUrl ? (
           <video
             ref={(el) => register(run.candidate_id, el)}
