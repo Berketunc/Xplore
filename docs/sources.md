@@ -19,11 +19,15 @@
   https://modal.com/docs/guide/volumes,
   https://modal.com/docs/guide/job-queue,
   https://modal.com/docs/guide/webhooks.
+- Interactive browser graphics: Three.js 0.180.0, loaded from the pinned jsDelivr
+  ES module. Three.js authors, MIT license:
+  https://github.com/mrdoob/three.js/blob/r180/LICENSE.
 
 Xplore's contribution is the controlled experiment workflow: single-pillow
 selection, bounded loading, precise reference/state exports, deformation metrics,
 deterministic shortlist, versioned cache, persistent job/record handling, HTTP
-artifacts and the frontend integration. Xplore does not claim authorship of the
+artifacts, bounded mouse-to-solver interaction and the frontend integration.
+Xplore does not claim authorship of the
 underlying MPM method, PowerSim, PowerFoam, PhysGaussian or the released asset.
 
 The recorded source adapter is additive and is in `backend/state_export.py` and

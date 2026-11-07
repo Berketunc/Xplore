@@ -1,29 +1,29 @@
 {
   "api_base_url": "https://tnberkec--xplore-simulation-api.us-east.modal.run",
-  "experiment_id": "xplore-91330f19830d401a81ba1cfc0bd6c25a",
-  "verification_seconds": 12.593757790978998,
-  "cached_comparison_seconds": 1.4112324999878183,
+  "experiment_id": "xplore-b91e78b2ce454c4b8af6d0733810a3b3",
+  "verification_seconds": 18.234506791981403,
+  "cached_comparison_seconds": 3.831845750042703,
   "runs": [
     {
       "candidate_id": "flexible",
       "deformation_pct": 15.535634033858592,
       "runtime_seconds": 49.976481678,
       "execution_mode": "cached",
-      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/flexible.mp4"
+      "video_url": "/v1/artifacts/xplore-b91e78b2ce454c4b8af6d0733810a3b3/flexible.mp4"
     },
     {
       "candidate_id": "balanced",
       "deformation_pct": 12.412118365226805,
       "runtime_seconds": 98.91197987400002,
       "execution_mode": "cached",
-      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/balanced.mp4"
+      "video_url": "/v1/artifacts/xplore-b91e78b2ce454c4b8af6d0733810a3b3/balanced.mp4"
     },
     {
       "candidate_id": "firm",
       "deformation_pct": 9.702342384400623,
       "runtime_seconds": 115.18544432300001,
       "execution_mode": "cached",
-      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/firm.mp4"
+      "video_url": "/v1/artifacts/xplore-b91e78b2ce454c4b8af6d0733810a3b3/firm.mp4"
     }
   ],
   "selection": {

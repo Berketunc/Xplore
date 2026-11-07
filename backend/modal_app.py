@@ -364,8 +364,9 @@ def process_experiment(identifier):
     return execute_experiment(identifier, store=store, registry=registry, run_live=live)
 
 
-@app.function(image=api_image, volumes={"/data": volume}, cpu=1, memory=512, timeout=60,
+@app.function(image=api_image, volumes={"/data": volume}, cpu=1, memory=512, timeout=240,
               max_containers=1, scaledown_window=15)
+@modal.concurrent(max_inputs=16)
 @modal.asgi_app()
 def api():
     import hashlib
@@ -420,10 +421,82 @@ def api():
             destination.write_bytes(payload)
             return destination
 
-    return create_app(store=store, submit=submit,
+    result = create_app(store=store, submit=submit,
         catalog=lambda: get_catalog(available=registry.get("available", False), numerical_quality=registry.get("numerical_quality")),
         artifact_path=artifact_path, refresh=refresh,
         resolve_cached=lambda record: try_cached(record, registry=registry))
+    from backend.live_api import install_interactive_routes
+    install_interactive_routes(result, claims=claims, volume=volume, stream_function=stream_physics)
+    return result
+
+
+@app.function(image=runtime_image, gpu=["L4", "L40S", "A10", "T4"], volumes={"/data": volume}, cpu=4, memory=8192,
+              timeout=180, startup_timeout=90, max_containers=1, scaledown_window=30)
+def stream_physics(commands, candidate):
+    import queue
+    import threading
+    import time
+    from backend.interactive import InteractivePhysics
+
+    volume.reload()
+    model = InteractivePhysics(candidate)
+    model.substeps = 33
+    model.step()
+    volume.commit()  # Persist compiled Warp kernels for later cold starts.
+    local_commands = queue.Queue()
+    stop = threading.Event()
+
+    def receive_commands():
+        while not stop.is_set():
+            try:
+                for item in commands.get_many(100, timeout=.2):
+                    local_commands.put(item)
+            except queue.Empty:
+                pass
+            except Exception:
+                stop.set()
+
+    receiver = threading.Thread(target=receive_commands, daemon=True)
+    receiver.start()
+    started = time.monotonic()
+    yield {"type": "ready", "mesh": model.mesh, "candidate_id": candidate, "max_live_seconds": 90}
+    try:
+        while time.monotonic()-started < 90 and not stop.is_set():
+            frame_started = time.monotonic()
+            while not local_commands.empty():
+                item = local_commands.get_nowait()
+                if item["type"] == "stop":
+                    return
+                if item["type"] == "grab":
+                    model.grab_point(item["point"], item["target"])
+                elif item["type"] == "move":
+                    model.move(item["target"])
+                elif item["type"] == "release":
+                    model.release()
+                elif item["type"] == "reset":
+                    model = InteractivePhysics(candidate)
+                    model.substeps = 33
+            positions = model.step()
+            yield {"type": "frame", "positions": positions, "sequence": model.frame,
+                "simulation_time": model.frame*model.dt*model.substeps,
+                "remaining_seconds": max(0,90-(time.monotonic()-started))}
+            stop.wait(max(0,1/30-(time.monotonic()-frame_started)))
+        yield {"type": "ended", "reason": "session_limit"}
+    finally:
+        stop.set()
+        receiver.join(timeout=1)
+
+
+@app.function(image=runtime_image, gpu="L40S", volumes={"/data": volume}, cpu=4, memory=8192,
+              timeout=180, max_containers=1, scaledown_window=2, retries=0)
+def interactive_benchmark():
+    from backend.interactive import benchmark
+
+    volume.reload()
+    try:
+        return benchmark()
+    finally:
+        volume.commit()
 
 
 @app.local_entrypoint()
@@ -463,6 +536,8 @@ def main(stage: str = "prepare", candidate: str = "balanced", load: float = 1.,
         refined = controlled.remote("balanced", 1., dt/2, 100, force)
         result = {"original": original, "refined": refined,
             "relative_difference": abs(original["deformation_pct"]-refined["deformation_pct"])/max(original["deformation_pct"], .01)}
+    elif stage == "interactive-benchmark":
+        result = interactive_benchmark.remote()
     else:
         raise ValueError(f"Unknown stage: {stage}")
     result_name = "baseline" if stage == "fetch" else stage

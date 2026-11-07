@@ -21,6 +21,13 @@ Copy `.env.example` to `.env.local` and set:
 
 In live mode the backend must allow CORS from the frontend origin.
 
+Live mode opens **Grab and deform**, embedding the backend-hosted 3D workspace
+with a real GPU physics WebSocket. Press Start live physics before dragging.
+**Recorded comparison** retains the experiment workflow below; saved experiment
+URLs open that tab directly. Mock mode defaults to the recorded fixture workflow.
+See [the interaction handoff](../docs/interactive-handoff.md) for controls,
+temporary session behavior, rendering assumptions and compute limits.
+
 ## Mock-mode test hooks
 
 - `?experiment=fixture-completed` / `?experiment=fixture-partial` open the shared fixtures.

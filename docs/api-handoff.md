@@ -13,6 +13,12 @@ VITE_EXAMPLE_EXPERIMENT_ID=xplore-6c8a5838ec8c4202b55abc9725e98ee6
 These values contain no credentials. Keep provider credentials server-side.
 The shared v1.0 schema and existing fixtures are unchanged.
 
+The main frontend now has **Grab and deform** and **Recorded comparison** tabs.
+Live mode opens the interactive workspace unless a saved experiment is in the
+URL. The new workspace, mouse protocol and GPU/session limits are documented in
+[interactive-handoff.md](interactive-handoff.md). Live gestures do not change the
+recorded comparison's metric or ranking.
+
 ## Actual experiment
 
 - Test ID: `cushion-compression-v1`.

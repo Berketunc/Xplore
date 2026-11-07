@@ -6,6 +6,7 @@ import { ComparisonTable } from "./components/ComparisonTable";
 import { DeformationChart, type ChartSeries } from "./components/DeformationChart";
 import { ExperimentStatusBar } from "./components/ExperimentStatusBar";
 import { ExplanationPanel } from "./components/ExplanationPanel";
+import { InteractiveWorkspace } from "./components/InteractiveWorkspace";
 import { initialSetup, SetupForm, setupFromRequest, type SetupState } from "./components/SetupForm";
 import { Card, Pill, Spinner } from "./components/ui";
 import { useCatalog } from "./hooks/useCatalog";
@@ -28,6 +29,7 @@ const timeAxisLabel = (unit: string | undefined) =>
   unit === "simulation_s" ? "Simulation time (s)" : unit === "frame" ? "Frame" : (unit ?? "Time");
 
 export default function App() {
+  const [workspace, setWorkspace] = useState<"interact" | "compare">(() => idFromUrl() || api.mode !== "live" ? "compare" : "interact");
   const { catalog, error: catalogError, retry } = useCatalog();
   const test = catalog?.tests.find((t) => t.availability === "available") ?? catalog?.tests[0];
 
@@ -41,7 +43,11 @@ export default function App() {
 
   // Browser back/forward restores the experiment in the URL.
   useEffect(() => {
-    const onPop = () => setExperimentId(idFromUrl());
+    const onPop = () => {
+      const id = idFromUrl();
+      setExperimentId(id);
+      setWorkspace(id || api.mode !== "live" ? "compare" : "interact");
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -126,7 +132,7 @@ export default function App() {
             <Pill tone="warning">Mock API · illustrative fixtures</Pill>
           ) : (
             <Pill>
-              Live API · <span className="font-mono">{api.baseUrl}</span>
+              Live physics and experiment results
             </Pill>
           )}
         </div>
@@ -144,16 +150,20 @@ export default function App() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
         <p className="mb-6 max-w-3xl text-sm text-ink-2">
-          Compare soft-material options under the same virtual experiment, check them against your deformation target, and
-          decide which prototype to test physically next.
+          Grab and deform a prepared soft object, explore stiffness scenarios, or compare recorded material experiments.
         </p>
+        <div className="mb-6 flex gap-2">
+          <button type="button" aria-pressed={workspace === "interact"} onClick={() => setWorkspace("interact")} className={`rounded-lg border px-4 py-2 text-sm ${workspace === "interact" ? "bg-ink text-surface" : "border-hairline bg-surface text-ink"}`}>Grab and deform</button>
+          <button type="button" aria-pressed={workspace === "compare"} onClick={() => setWorkspace("compare")} className={`rounded-lg border px-4 py-2 text-sm ${workspace === "compare" ? "bg-ink text-surface" : "border-hairline bg-surface text-ink"}`}>Recorded comparison</button>
+        </div>
+        {workspace === "interact" && <InteractiveWorkspace />}
 
-        {!catalog && !catalogError && (
+        {workspace === "compare" && !catalog && !catalogError && (
           <p className="flex items-center gap-2 text-sm text-ink-2">
             <Spinner /> Loading experiment catalog…
           </p>
         )}
-        {catalogError && (
+        {workspace === "compare" && catalogError && (
           <Card title="Couldn't load the experiment catalog">
             <p className="text-sm text-ink-2">{catalogError.message}</p>
             <button type="button" onClick={retry} className="mt-3 rounded-lg border border-hairline px-3 py-1.5 text-sm hover:bg-surface-2">
@@ -161,9 +171,9 @@ export default function App() {
             </button>
           </Card>
         )}
-        {catalog && !test && <Card title="No supported experiments">The catalog doesn't list any tests yet.</Card>}
+        {workspace === "compare" && catalog && !test && <Card title="No supported experiments">The catalog doesn't list any tests yet.</Card>}
 
-        {test && setup && (
+        {workspace === "compare" && test && setup && (
           <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
             <aside className="space-y-4">
               <SetupForm

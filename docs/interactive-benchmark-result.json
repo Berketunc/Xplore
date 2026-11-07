@@ -1,0 +1,12 @@
+{
+  "initialization_seconds": 46.59287072,
+  "updates": 60,
+  "physics_wall_seconds": 0.21866458799999577,
+  "updates_per_second": 274.3928523076684,
+  "simulation_seconds": 0.6,
+  "particle_count": 25104,
+  "surface_vertices": 207,
+  "frame_json_bytes": 12308,
+  "finite": true,
+  "surface_mesh_saved": true
+}

@@ -1,0 +1,21 @@
+{
+  "base_url": "https://tnberkec--xplore-simulation-api.us-east.modal.run",
+  "candidate_id": "flexible",
+  "session_id": "afb692aab45ead92ca40a4e23d75458e",
+  "ready_seconds": 59.491639417014085,
+  "received_updates_per_second": 30.368250072944353,
+  "first_motion_seconds": 0.5301444590440951,
+  "max_surface_displacement_mpm": 0.08893099478745067,
+  "reset_verified": true,
+  "surface_vertices": 207,
+  "physics": "PowerSim bundled MPM; browser display uses a convex surface proxy",
+  "checks": [
+    "public WebSocket",
+    "real GPU grab deformation",
+    "non-rigid motion",
+    "finite positions",
+    "release",
+    "reset",
+    "stop"
+  ]
+}

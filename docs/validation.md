@@ -92,16 +92,19 @@ identities, numerical-quality record and saved example ID. Source state and medi
 remain on Modal Volume `xplore-experiments`; checkpoints and large outputs are
 excluded from Git. Use the API artifact links or the documented Modal commands.
 
-Eighteen local checks cover numeric metrics, ranking edge cases, schema responses,
+Twenty-five local checks cover numeric metrics, ranking edge cases, schema responses,
 request validation, saved-record recovery, partial failures, byte ranges and warning
-preservation. All three final MP4s decode successfully; initial/final stills were
+preservation, plus bounded interaction commands and session reservations.
+All three final MP4s decode successfully; initial/final stills were
 visually inspected. Deployed HTTP verification is recorded separately in
 `deployment-result.json` and all recorded HTTP checks passed.
 
-The deployed submit-to-completed check measured **1.41 seconds** for a complete
-genuine cache hit, after adding the direct-cache path. This is an HTTP client
-measurement, excluding browser rendering; the original GPU runtimes above remain
-attached to the reused results.
+The deployed submit-to-completed check initially measured **1.41 seconds** for a
+complete genuine cache hit, after adding the direct-cache path. The post-interaction
+regression check measured **3.83 seconds** while an interactive session was starting.
+These are HTTP client measurements, excluding browser rendering; the original GPU
+runtimes above remain attached to the reused results. The latest full check is in
+`deployment-result.json`.
 
 Person A's frontend passed TypeScript checking and its Vite production build with
 the live API configuration. Automated visual/browser playback verification was
@@ -112,6 +115,21 @@ checked by Person A. HTTP byte ranges and full MP4 decoding were verified.
 The independent released pillow-drop reproduction is recorded in
 `baseline-result.json` and `feasibility.md`. It established a working upstream
 pipeline; it is not the compression experiment or a physical validation result.
+
+## Live mouse interaction
+
+The main frontend also provides a live mouse-grab workspace. A deployed native
+WebSocket check verified real GPU non-rigid deformation, finite positions,
+release, reset and stop for all three stiffness options. The Balanced check received 28.57 updates/s after a
+73.81-second cold start; first measured movement arrived 0.315 seconds after the
+grab command. See `interactive-verification.json` and
+[interactive-handoff.md](interactive-handoff.md) for the protocol and limits.
+
+The browser draws a simplified 207-vertex convex surface from the 25,104 simulated
+particles. This is a graphics proxy, not a neural rendering. Interactive gestures
+have not undergone numerical refinement or physical comparison and do not create
+the repeatable comparison's results. Native streaming tests do not verify browser
+appearance or pointer behavior; those visual checks remain outstanding.
 
 ## Costs
 

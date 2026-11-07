@@ -1,17 +1,22 @@
 # Xplore
 
-Virtual material comparisons for deciding which physical prototype to test next.
+Grab and deform a soft object, then compare material scenarios to decide which
+physical prototype to test next.
 The project scope and role split are in [plan.md](plan.md).
 
-The backend now serves a genuine three-candidate PowerSim compression-pulse
-comparison, persistent experiment records, synchronized videos, measured time
-series, and a deterministic shortlist. The shared v1.0 schema is unchanged.
+The main frontend includes live mouse interaction with a GPU PowerSim MPM solver,
+plus a genuine three-candidate compression-pulse comparison, persistent experiment
+records, synchronized videos, measured time series and a deterministic shortlist.
+The shared v1.0 experiment schema is unchanged. Live gestures are temporary and
+separate from the repeatable recorded comparison.
 
 **These results are exploratory.** Halving the timestep changed Balanced's peak by
 11.8% (1.46 percentage points), so the 5% convergence goal was not met. Every
 shortlist is provisional and physical validation remains pending.
 
 - API: https://tnberkec--xplore-simulation-api.us-east.modal.run
+- Grab and deform: https://tnberkec--xplore-simulation-api.us-east.modal.run/sandbox
+- Live interaction and its limits: [docs/interactive-handoff.md](docs/interactive-handoff.md).
 - Interactive API docs: https://tnberkec--xplore-simulation-api.us-east.modal.run/docs
 - Genuine saved example: https://tnberkec--xplore-simulation-api.us-east.modal.run/v1/examples/example.json
 - Person A integration: [docs/api-handoff.md](docs/api-handoff.md).

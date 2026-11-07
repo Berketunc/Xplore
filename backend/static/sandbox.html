@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xplore · Grab and deform</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f8f6f0;color:#26312c;font:14px system-ui,sans-serif}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 270px;min-height:590px}#view{min-height:590px;position:relative;touch-action:none}canvas{width:100%;height:100%;display:block}.hint{position:absolute;left:20px;top:18px;pointer-events:none;background:#fff9;padding:9px 12px;border-radius:8px;font-size:12px}.controls{padding:25px 20px;border-left:1px solid #dcded6;display:flex;flex-direction:column;gap:17px}h1{font-size:20px;letter-spacing:-.6px;margin:0}p{line-height:1.5;margin:0;color:#5d665f}label{display:block;font-size:12px;font-weight:600;margin-bottom:7px}select,button{font:inherit;border-radius:8px;width:100%;padding:10px 12px;border:1px solid #bdc9bf;background:white;color:#26312c}button{cursor:pointer;background:#264b3c;color:white;border:0;font-weight:600}button:disabled{cursor:wait;opacity:.5}.secondary{background:#e5eae1;color:#26312c}.buttons{display:flex;gap:8px}.status{border-radius:8px;padding:12px;background:#e9ede5;font-size:12px;line-height:1.5}#status[data-error]{background:#f3e2d8}.badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#54715f}.foot{margin-top:auto;font-size:11px;color:#647165;line-height:1.6}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.stats strong{display:block;font-size:18px;margin-top:4px}.fixed{color:#566a59}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e38e48;margin-right:5px}@media(max-width:650px){.workspace{grid-template-columns:1fr}#view{min-height:400px;height:400px}.controls{border-left:0;border-top:1px solid #dcded6}.foot{margin-top:0}}
+</style>
+</head>
+<body>
+<main class="workspace">
+<div id="view"><div class="hint">Drag the pillow · right-drag to orbit · scroll to zoom</div></div>
+<aside class="controls">
+<div><div class="badge">Live physics workspace</div><h1>Grab. Push. Release.</h1></div>
+<p>Hold the pillow with your mouse and move it. Its lower edge stays fixed while the material deforms.</p>
+<div><label for="material">Stiffness scenario</label><select id="material"><option value="flexible">Flexible · 0.5× stiffness</option><option value="balanced" selected>Balanced · 1× stiffness</option><option value="firm">Firm · 2× stiffness</option></select></div>
+<button id="start">Start live physics</button>
+<div class="buttons"><button class="secondary" id="reset" disabled>Reset</button><button class="secondary" id="stop" disabled>Stop</button></div>
+<div id="status" class="status" role="status">Loading the 3D object…</div>
+<div class="stats"><div>Session time<strong id="remaining">—</strong></div><div>Updates received<strong id="fps">—</strong></div></div>
+<p class="fixed"><span class="dot"></span>Orange dot: your grab point.<br>Dark lower vertices: fixed support.</p>
+<p class="foot">Powered by PowerSim’s MPM solver on a remote GPU. This is a simplified surface drawn from real simulated particle positions. Exploratory physics: physical agreement and numerical convergence are not established. Live gestures are separate from the recorded compression comparison. Sessions are limited to 90 seconds.</p>
+</aside>
+</main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+const view=document.querySelector('#view'),status=document.querySelector('#status');
+const start=document.querySelector('#start'),stop=document.querySelector('#stop'),reset=document.querySelector('#reset'),material=document.querySelector('#material');
+const scene=new THREE.Scene();scene.background=new THREE.Color('#f8f6f0');
+const camera=new THREE.PerspectiveCamera(38,1,.01,100);camera.up.set(0,0,1);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio));view.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x6d7769,2.5));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(2,-3,5);scene.add(light);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(5,5),new THREE.MeshStandardMaterial({color:0xe9e9df,roughness:1}));ground.position.set(1,1,.52);scene.add(ground);
+const grid=new THREE.GridHelper(3,15,0xb7c2b2,0xdce1d4);grid.rotation.x=Math.PI/2;grid.position.set(1,1,.523);scene.add(grid);
+const marker=new THREE.Mesh(new THREE.SphereGeometry(.018,16,12),new THREE.MeshBasicMaterial({color:0xe38e48}));marker.visible=false;scene.add(marker);
+let mesh,geometry,baseline,socket,ready=false,dragging=false,orbit=false,lastX=0,lastY=0,lastSent=0,frames=0,fpsSince=performance.now();
+let yaw=-1.08,pitch=.48,radius=2.45;const center=new THREE.Vector3(1,1,.98),raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),plane=new THREE.Plane(),dragPoint=new THREE.Vector3();
+function updateCamera(){camera.position.set(center.x+radius*Math.cos(pitch)*Math.cos(yaw),center.y+radius*Math.cos(pitch)*Math.sin(yaw),center.z+radius*Math.sin(pitch));camera.lookAt(center)}updateCamera();
+new ResizeObserver(()=>{const w=view.clientWidth,h=view.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}).observe(view);
+function message(text,error=false){status.textContent=text;status.toggleAttribute('data-error',error)}
+function renderMesh(data){if(mesh){geometry.dispose();mesh.material.dispose();scene.remove(mesh)}geometry=new THREE.BufferGeometry();baseline=new Float32Array(data.positions);geometry.setAttribute('position',new THREE.BufferAttribute(baseline.slice(),3));geometry.setIndex(data.triangles);const support=new Set(data.supported_particle_ids),colors=[];for(const id of data.particle_ids){const c=new THREE.Color(support.has(id)?0x506b60:0x8bb0a1);colors.push(c.r,c.g,c.b)}geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.65,metalness:.03,side:THREE.DoubleSide}));scene.add(mesh);const floor=Math.min(...data.positions.filter((_,i)=>i%3===2))-.01;ground.position.z=floor;grid.position.z=floor+.002}
+function send(data){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(data))}
+function closeSession(){dragging=false;marker.visible=false;ready=false;send({type:'stop'});const closing=socket;socket=null;closing?.close();start.disabled=false;material.disabled=false;stop.disabled=true;reset.disabled=true}
+start.onclick=async()=>{
+  start.disabled=true;material.disabled=true;message('Reserving a bounded GPU session…');
+  try{
+    const response=await fetch('/v1/interactive/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({candidate_id:material.value})});
+    const data=await response.json();
+    if(!response.ok)throw Error(data.error?.message||'Could not start a session');
+    const connection=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}${data.websocket_url}`);
+    socket=connection;stop.disabled=false;
+    connection.onmessage=e=>{
+      if(socket!==connection)return;
+      const packet=JSON.parse(e.data);
+      if(packet.type==='loading')message(packet.message);
+      if(packet.type==='ready'){
+        renderMesh(packet.mesh);ready=true;reset.disabled=false;frames=0;fpsSince=performance.now();
+        message('Live · grab the upper part of the pillow and drag. Release to let it respond.');
+        document.querySelector('#remaining').textContent='90 s';document.querySelector('#fps').textContent='—';
+      }
+      if(packet.type==='frame'){
+        const positions=geometry.getAttribute('position');positions.array.set(packet.positions);positions.needsUpdate=true;
+        geometry.computeVertexNormals();geometry.computeBoundingSphere();frames++;
+        const now=performance.now();
+        if(now-fpsSince>1000){document.querySelector('#fps').textContent=`${Math.round(frames*1000/(now-fpsSince))}/s`;frames=0;fpsSince=now}
+        document.querySelector('#remaining').textContent=`${Math.ceil(packet.remaining_seconds)} s`;
+      }
+      if(packet.type==='ended'){closeSession();message('Session ended. Start another session to continue.')}
+      if(packet.type==='error'){closeSession();message(packet.message,true)}
+    };
+    connection.onclose=()=>{if(socket!==connection)return;closeSession();message('Session closed. Start live physics to interact again.')};
+    connection.onerror=()=>{if(socket!==connection)return;closeSession();message('The live connection stopped. Try a new session.',true)};
+  }catch(error){closeSession();message(error.message,true)}
+};
+stop.onclick=()=>{closeSession();message('Live physics stopped.')};reset.onclick=()=>{send({type:'release'});send({type:'reset'});marker.visible=false;dragging=false};
+function aim(event){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera)}
+function bounded(v){return [v.x,v.y,v.z].map(n=>Math.max(.15,Math.min(1.85,n)))}
+renderer.domElement.oncontextmenu=e=>e.preventDefault();
+renderer.domElement.onpointerdown=e=>{if(e.button===2){orbit=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);return}if(!ready){message('Start live physics first. You can orbit the static object now.');return}aim(e);const hit=raycaster.intersectObject(mesh)[0];if(!hit)return;if(hit.point.z<.78){message('The lower edge is supported. Grab higher up on the pillow.');return}dragging=true;plane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()),hit.point);marker.position.copy(hit.point);marker.visible=true;send({type:'grab',point:bounded(hit.point),target:bounded(hit.point)});renderer.domElement.setPointerCapture(e.pointerId)};
+renderer.domElement.onpointermove=e=>{if(orbit){yaw-=(e.clientX-lastX)*.008;pitch=Math.max(.1,Math.min(1.25,pitch+(e.clientY-lastY)*.006));lastX=e.clientX;lastY=e.clientY;updateCamera();return}if(!dragging||!ready)return;aim(e);if(raycaster.ray.intersectPlane(plane,dragPoint)){marker.position.copy(dragPoint);if(performance.now()-lastSent>35){send({type:'move',target:bounded(dragPoint)});lastSent=performance.now()}}};
+function release(){if(dragging)send({type:'release'});dragging=false;orbit=false;marker.visible=false}renderer.domElement.onpointerup=release;renderer.domElement.onpointercancel=release;renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();radius=Math.max(1.5,Math.min(5,radius+e.deltaY*.002));updateCamera()},{passive:false});window.addEventListener('beforeunload',closeSession);
+try{const response=await fetch('/v1/interactive/mesh');if(!response.ok)throw Error('Could not load the live mesh');renderMesh(await response.json());message('3D object ready. Start live physics, then drag to deform it.')}catch(error){message(error.message,true)}
+renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+if(window.parent!==window)new ResizeObserver(entries=>window.parent.postMessage({type:'xplore-workspace-resize',height:entries[0].target.scrollHeight},'*')).observe(document.querySelector('.workspace'));
+</script>
+</body></html>

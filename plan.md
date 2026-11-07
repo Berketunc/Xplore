@@ -1,5 +1,14 @@
 # Xplore: Virtual Material Experiments
 
+> Implementation update, 7 November 2026: the user clarified that direct mouse
+> grabbing, pushing and deformation is the primary interaction. The live frontend
+> now opens that GPU-backed workspace and retains the repeatable experiment flow
+> in a Recorded comparison tab. Person B also integrated this frontend workspace
+> at the user's request. See [the live interaction handoff](docs/interactive-handoff.md)
+> and [current evidence](docs/validation.md). The sections below preserve the
+> original plan; live gestures currently are temporary and do not create saved
+> comparison metrics. Numerical and physical validation remain incomplete.
+
 ## 1. Project summary
 
 **Xplore helps small product design teams compare soft-material options virtually and decide which prototypes to physically test next.**
