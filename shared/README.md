@@ -24,6 +24,20 @@ All fixtures are `fixture: true`, `evidence_status: "illustrative"`, with `engin
 
 ## Open questions for Person B
 
+**Backend handoff is now available:** [API connection and actual protocol](../docs/api-handoff.md).
+The existing schema is unchanged. The live test is an exploratory compression
+pulse with load multiplier 1.0 only and peak compression over 0–2.0 simulation
+seconds. CORS, relative artifact URLs, H.264 byte ranges, and re-POST cache reuse
+are implemented. A full cache hit can return HTTP 202 with an already-completed
+record; cache misses use the asynchronous states.
+
+`selection.provisional` can also flag unresolved numerical sensitivity even when
+every candidate completed. The exact reason is in `selection.notes`, the visible
+assumptions, and the additive `numerical_quality` field. Do not infer that a run
+failed from this flag alone. See [numerical evidence](../docs/validation.md).
+
+The original questions below are retained as drafting context:
+
 1. **Metric aggregation:** I proposed `peak` over the full interval. Switch to `settled_mean` if that's more robust for the scene.
 2. **Load bounds:** 0.5–2.0 in steps of 0.5 are placeholders until you know the stable range.
 3. **Changing only the target or costs:** the frontend will re-POST the same simulation inputs and expects a quick cache hit (new `experiment_id`, runs marked `execution_mode: "cached"`, new `selection`). Does that work, or do you want a dedicated route?

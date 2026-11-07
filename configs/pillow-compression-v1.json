@@ -1,0 +1,107 @@
+{
+  "test_id": "cushion-compression-v1",
+  "kind": "recorded_config_snapshot",
+  "authoritative_runner": "backend/controlled.py",
+  "numerical_quality": {
+    "status": "timestep_sensitive",
+    "timestep_goal_relative_change": 0.05,
+    "timestep_relative_change": 0.11781188860751507,
+    "timestep_absolute_change_pp": 1.4622951062273923,
+    "baseline_dt": 0.001,
+    "refined_dt": 0.0005,
+    "baseline_peak_pct": 12.412118365226805,
+    "refined_peak_pct": 10.949823258999412,
+    "note": "Exploratory simulation: halving the timestep changed Balanced's peak compression by 11.8% (1.46 percentage points). The 5% convergence goal was not met; the shortlist is provisional and near-threshold decisions may change. Physical agreement is not established."
+  },
+  "baseline_config": {
+    "material": "jelly",
+    "n_grid": 100,
+    "grid_lim": 2.0,
+    "E": 10000.0,
+    "nu": 0.3,
+    "density": 2000,
+    "g": [
+      0,
+      0,
+      0
+    ],
+    "grid_v_damping_scale": 0.9990004498800211,
+    "substep_dt": 0.001,
+    "frame_dt": 0.02,
+    "frame_num": 100,
+    "scale": 1.0,
+    "rotation_degree": [],
+    "rotation_axis": [],
+    "boundary_conditions": [
+      {
+        "type": "bounding_box"
+      },
+      {
+        "type": "cuboid",
+        "point": [
+          1,
+          1,
+          0.5777479186654091
+        ],
+        "size": [
+          1,
+          1,
+          0.17774791866540907
+        ],
+        "velocity": [
+          0,
+          0,
+          0
+        ],
+        "start_time": 0.0,
+        "end_time": 1000.0
+      },
+      {
+        "type": "enforce_particle_translation",
+        "point": [
+          1,
+          1,
+          0.5777479186654091
+        ],
+        "size": [
+          1,
+          1,
+          0.17774791866540907
+        ],
+        "velocity": [
+          0,
+          0,
+          0
+        ],
+        "start_time": 0.0,
+        "end_time": 1000.0
+      },
+      {
+        "type": "particle_impulse",
+        "force": [
+          0,
+          0,
+          -0.02
+        ],
+        "point": [
+          1,
+          1,
+          1.424895778298378
+        ],
+        "size": [
+          1,
+          1,
+          0.1751042217016221
+        ],
+        "num_dt": 100,
+        "start_time": 0.0
+      }
+    ],
+    "default_camera_index": 87
+  },
+  "candidate_stiffness_multipliers": {
+    "flexible": 0.5,
+    "balanced": 1.0,
+    "firm": 2.0
+  }
+}

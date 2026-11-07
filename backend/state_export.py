@@ -13,6 +13,7 @@ def patched_source(source):
     reference_export = '''    if save_positions:
         xplore_state_dir = output_path / "xplore_state"
         xplore_state_dir.mkdir(exist_ok=True)
+        save_uint8_rgb_png(backdrop, str(output_path / "reference.png"))
         torch.save({
             "particle_ids": indices.detach().to(torch.int64).cpu(),
             "positions_mpm": mpm_solver.export_particle_x_to_torch().detach().float().cpu(),
@@ -43,11 +44,13 @@ def patched_source(source):
             torch.save({
                 "time": (frame + 1) * step_per_frame * substep_dt,
                 "positions_mpm": x.detach().float().cpu(),
+                "max_speed_mpm": float(torch.linalg.vector_norm(mpm_solver.export_particle_v_to_torch(), dim=1).max()),
             }, xplore_state_dir / f"frame_{frame:04d}.pt")
 '''
     if source.count(before_loop) != 1 or source.count(after_position) != 1:
         raise ValueError("Export anchors do not match the pinned PowerSim source")
-    return source.replace(before_loop, reference_export + before_loop).replace(after_position, after_position + frame_export)
+    updated = source.replace(before_loop, reference_export + before_loop).replace(after_position, after_position + frame_export)
+    return updated.replace("import torch\n", "import torch\n\ntorch.manual_seed(0)\nnp.random.seed(0)\n", 1)
 
 
 def apply_export_adapter(simulate_file):

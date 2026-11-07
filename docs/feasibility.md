@@ -1,5 +1,9 @@
 # Person B feasibility record
 
+This is the historical record of the first upstream reproduction. The current
+controlled experiment and deployed API are described in [validation.md](validation.md)
+and [api-handoff.md](api-handoff.md).
+
 ## Execution controls
 
 - Initial project spending allowance: £5, chosen on 7 November 2026 with the user's authorization.

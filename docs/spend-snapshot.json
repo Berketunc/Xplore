@@ -1,0 +1,13 @@
+{
+  "currency": "USD",
+  "reported_cost": "1.10083267",
+  "resource_costs": {
+    "Memory": "0.06347790",
+    "CPU": "0.10302427",
+    "Network Egress": "0.00122169",
+    "L40S": "0.93310881"
+  },
+  "snapshot_saved_at": "2026-11-07T15:16:52.526127+00:00",
+  "application_count": 16,
+  "note": "Modal-reported Xplore usage returned by today's billing report. Current/in-flight usage or billing updates may not be fully reflected; this is not the final invoice."
+}

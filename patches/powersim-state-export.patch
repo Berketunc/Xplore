@@ -1,12 +1,23 @@
 --- a/powersim/foam_evolve/simulate.py
 +++ b/powersim/foam_evolve/simulate.py
-@@ -537,10 +537,42 @@
+@@ -13,6 +13,9 @@
+ 
+ import numpy as np
+ import torch
++
++torch.manual_seed(0)
++np.random.seed(0)
+ from scipy.spatial import cKDTree
+ from tqdm import tqdm
+ 
+@@ -537,10 +540,44 @@
          knn_d0 = np.maximum(knn_d0, 1e-6)
          print(f"radius mode 'neighbor': initial mean 8-NN distance {knn_d0.mean():.5f} (world units)")
  
 +    if save_positions:
 +        xplore_state_dir = output_path / "xplore_state"
 +        xplore_state_dir.mkdir(exist_ok=True)
++        save_uint8_rgb_png(backdrop, str(output_path / "reference.png"))
 +        torch.save({
 +            "particle_ids": indices.detach().to(torch.int64).cpu(),
 +            "positions_mpm": mpm_solver.export_particle_x_to_torch().detach().float().cpu(),
@@ -39,6 +50,7 @@
 +            torch.save({
 +                "time": (frame + 1) * step_per_frame * substep_dt,
 +                "positions_mpm": x.detach().float().cpu(),
++                "max_speed_mpm": float(torch.linalg.vector_norm(mpm_solver.export_particle_v_to_torch(), dim=1).max()),
 +            }, xplore_state_dir / f"frame_{frame:04d}.pt")
          # export_particle_R_to_torch() is deliberately not called: polar_decompose(F) below derives
          # its own R via SVD and needs the full singular-value spectrum S anyway

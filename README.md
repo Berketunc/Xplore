@@ -3,11 +3,28 @@
 Virtual material comparisons for deciding which physical prototype to test next.
 The project scope and role split are in [plan.md](plan.md).
 
-Person B's feasibility work has verified Modal GPU access and reproduced the
-released PowerSim pillow drop: 150 finite-state frames, a three-second H.264 clip,
-and 190.91 seconds of first-run simulation/rendering time. The comparison protocol,
-measurement regions, and API deployment remain to be established. See
-[docs/feasibility.md](docs/feasibility.md) for measured evidence and execution controls.
+The backend now serves a genuine three-candidate PowerSim compression-pulse
+comparison, persistent experiment records, synchronized videos, measured time
+series, and a deterministic shortlist. The shared v1.0 schema is unchanged.
+
+**These results are exploratory.** Halving the timestep changed Balanced's peak by
+11.8% (1.46 percentage points), so the 5% convergence goal was not met. Every
+shortlist is provisional and physical validation remains pending.
+
+- API: https://tnberkec--xplore-simulation-api.us-east.modal.run
+- Interactive API docs: https://tnberkec--xplore-simulation-api.us-east.modal.run/docs
+- Genuine saved example: https://tnberkec--xplore-simulation-api.us-east.modal.run/v1/examples/example.json
+- Person A integration: [docs/api-handoff.md](docs/api-handoff.md).
+- Experiment and evidence: [docs/validation.md](docs/validation.md).
+
+| Scenario | Stiffness multiplier | Peak normalized compression |
+| --- | --- | --- |
+| Flexible | 0.5 | 15.54% |
+| Balanced | 1.0 | 12.41% |
+| Firm | 2.0 | 9.70% |
+
+Only the tested reference load multiplier 1.0 is enabled. These are hypothetical
+parameter scenarios, not sourced or validated commercial materials.
 
 ## Local backend checks
 
@@ -15,6 +32,7 @@ measurement regions, and API deployment remain to be established. See
 python3.11 -m venv backend/.venv
 backend/.venv/bin/pip install -r backend/requirements.txt
 backend/.venv/bin/python -m unittest discover -s tests -v
+backend/.venv/bin/python shared/validate.py
 ```
 
 ## PowerSim reproduction
@@ -22,8 +40,8 @@ backend/.venv/bin/python -m unittest discover -s tests -v
 We started with the pillow drop because PowerSim ships a runnable example for the
 chosen pillow asset. Reproducing its original settings verifies the GPU environment,
 checkpoint loading, solver, state export, and video rendering before introducing
-custom loading or measurement changes. This is the feasibility baseline described
-in the plan; a controlled cushioning compression experiment remains a separate step.
+custom loading or measurement changes. It remains an independent feasibility
+baseline; the comparison now uses one isolated pillow and a short controlled pulse.
 
 Fetch the recorded upstream revision (the cache and large outputs are ignored):
 
@@ -33,6 +51,9 @@ git -C .cache/PowerSim checkout 24266e5264a213bceb426796ce91e12a555e2f69
 modal run backend/modal_probe.py
 modal run backend/modal_app.py --stage prepare
 modal run backend/modal_app.py --stage baseline
+modal run backend/modal_app.py --stage geometry
+modal run backend/modal_app.py --stage benchmark --force 0.02 --dt 0.001
+modal deploy backend/modal_app.py
 ```
 
 Modal authentication must already be configured. The prepare stage downloads only
@@ -45,10 +66,24 @@ manifest is in `docs/baseline-result.json`.
 
 The source export adapter in `backend/state_export.py` adds an actual pre-step
 reference, stable particle IDs, float32 solver positions, and timestep metadata
-for subsequent controlled experiments. It is not applied to the initial upstream
-reproduction. Quantitative experiment regions and controls remain to be frozen.
+for controlled experiments. It is not applied to the initial upstream reproduction.
+The comparison fixes the upper/lower 15% of the isolated pillow by initial height,
+supports the lower group, and loads the upper group for 0.1 simulation seconds.
+See [validation](docs/validation.md) for the full protocol and numerical limitations.
+
+The benchmark stages reuse versioned genuine caches. Normal browser requests at the
+supported settings reuse those caches and preserve the original execution timings.
+Changing only the target or costs creates a new record without rerunning physics.
+The default zero-load and refinement checks remain part of the benchmark record.
+
+To check the deployed flow and download the clips:
+
+```sh
+backend/.venv/bin/python scripts/verify_deployment.py https://tnberkec--xplore-simulation-api.us-east.modal.run
+```
 
 PowerSim and its vendored dependencies retain their upstream licenses and notices.
 PowerSim: Trong-Tung Nguyen and Anand Bhattad,
 https://github.com/nttung1110/PowerSim (Apache-2.0). Asset provenance is recorded by
 the prepare stage; assets are sourced from https://huggingface.co/datasets/Tung11/PowerSim.
+See [source and license notes](docs/sources.md).

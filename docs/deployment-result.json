@@ -1,0 +1,104 @@
+{
+  "api_base_url": "https://tnberkec--xplore-simulation-api.us-east.modal.run",
+  "experiment_id": "xplore-91330f19830d401a81ba1cfc0bd6c25a",
+  "verification_seconds": 12.593757790978998,
+  "cached_comparison_seconds": 1.4112324999878183,
+  "runs": [
+    {
+      "candidate_id": "flexible",
+      "deformation_pct": 15.535634033858592,
+      "runtime_seconds": 49.976481678,
+      "execution_mode": "cached",
+      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/flexible.mp4"
+    },
+    {
+      "candidate_id": "balanced",
+      "deformation_pct": 12.412118365226805,
+      "runtime_seconds": 98.91197987400002,
+      "execution_mode": "cached",
+      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/balanced.mp4"
+    },
+    {
+      "candidate_id": "firm",
+      "deformation_pct": 9.702342384400623,
+      "runtime_seconds": 115.18544432300001,
+      "execution_mode": "cached",
+      "video_url": "/v1/artifacts/xplore-91330f19830d401a81ba1cfc0bd6c25a/firm.mp4"
+    }
+  ],
+  "selection": {
+    "rule_id": "target-then-cost-v1",
+    "rule_description": "Qualify by maximum deformation, then rank by user-provided prototype cost; break ties by lower deformation and candidate ID.",
+    "metric_id": "compression_pct",
+    "target_max_deformation_pct": 15.0,
+    "candidates": [
+      {
+        "candidate_id": "flexible",
+        "outcome": "exceeds_target",
+        "deformation_pct": 15.535634033858592,
+        "prototype_cost_gbp": 2.0,
+        "rank": null
+      },
+      {
+        "candidate_id": "balanced",
+        "outcome": "meets_target",
+        "deformation_pct": 12.412118365226805,
+        "prototype_cost_gbp": 3.0,
+        "rank": 1
+      },
+      {
+        "candidate_id": "firm",
+        "outcome": "meets_target",
+        "deformation_pct": 9.702342384400623,
+        "prototype_cost_gbp": 5.0,
+        "rank": 2
+      }
+    ],
+    "shortlist": [
+      "balanced",
+      "firm"
+    ],
+    "cost_ranking_available": true,
+    "notes": [
+      "Exploratory simulation: halving the timestep changed Balanced's peak compression by 11.8% (1.46 percentage points). The 5% convergence goal was not met; the shortlist is provisional and near-threshold decisions may change. Physical agreement is not established."
+    ],
+    "decisions": [
+      {
+        "candidate_id": "flexible",
+        "outcome": "exceeds_target"
+      },
+      {
+        "candidate_id": "balanced",
+        "outcome": "meets_target"
+      },
+      {
+        "candidate_id": "firm",
+        "outcome": "meets_target"
+      }
+    ],
+    "qualifying_candidate_ids": [
+      "balanced",
+      "firm"
+    ],
+    "cost_ranking": [
+      "balanced",
+      "firm"
+    ],
+    "recommended_candidate_id": "balanced",
+    "missing_cost_candidate_ids": [],
+    "unavailable_candidate_ids": [],
+    "provisional": true
+  },
+  "checks": [
+    "frozen schema",
+    "submit/poll",
+    "summary",
+    "cached physics reuse",
+    "range requests",
+    "CSV/JSON artifacts",
+    "invalid input",
+    "artifact allowlist",
+    "CORS",
+    "saved record restore"
+  ]
+}
