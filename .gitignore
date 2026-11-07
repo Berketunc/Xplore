@@ -1,0 +1,23 @@
+# Dependencies and builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Large/generated artifacts (keep out of source commits; see plan §15)
+checkpoints/
+artifacts/
+*.mp4
+*.npz
+*.h5
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
+.venv/

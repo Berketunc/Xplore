@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "fixture": true,
+  "tests": [
+    {
+      "test_id": "cushion-compression-v1",
+      "title": "Cushion compression",
+      "protocol": "compression",
+      "availability": "proposed",
+      "engine": "powersim",
+      "scene": {
+        "scene_id": "pillow",
+        "display_name": "Prepared cushion",
+        "description": "A soft cushion compressed between a fixed base and a loaded top plate. PROPOSED: Person B confirms the real scene and protocol at the feasibility gate.",
+        "source": "PowerSim released assets (nttung1110/PowerSim); attribution to the original authors.",
+        "calibration": "dimensionless",
+        "preview_url": null
+      },
+      "metric": {
+        "metric_id": "compression_pct",
+        "label": "Peak compression",
+        "unit": "%",
+        "definition": "100 x (initial - current) separation of the upper and lower particle-group centroids along the loading axis, divided by the initial separation. Groups are fixed at the unloaded state.",
+        "aggregation": "peak",
+        "window_description": "Peak over the full simulated interval (0-2.0 simulation s), identical for every candidate."
+      },
+      "load": {
+        "label": "Load multiplier",
+        "unit": "x reference load",
+        "min": 0.5,
+        "max": 2.0,
+        "step": 0.5,
+        "default": 1.0
+      },
+      "target": {
+        "label": "Maximum allowed compression",
+        "unit": "%",
+        "min": 1,
+        "max": 80,
+        "step": 1,
+        "default": 20
+      },
+      "candidates": [
+        {
+          "candidate_id": "flexible",
+          "label": "Flexible",
+          "description": "Lower-stiffness scenario",
+          "parameter": {
+            "name": "stiffness_multiplier",
+            "value": 0.5,
+            "unit": "x baseline Young's modulus"
+          }
+        },
+        {
+          "candidate_id": "balanced",
+          "label": "Balanced",
+          "description": "Baseline-stiffness scenario",
+          "parameter": {
+            "name": "stiffness_multiplier",
+            "value": 1.0,
+            "unit": "x baseline Young's modulus"
+          }
+        },
+        {
+          "candidate_id": "firm",
+          "label": "Firm",
+          "description": "Higher-stiffness scenario",
+          "parameter": {
+            "name": "stiffness_multiplier",
+            "value": 2.0,
+            "unit": "x baseline Young's modulus"
+          }
+        }
+      ],
+      "max_candidates": 3,
+      "unit_system": {
+        "kind": "dimensionless",
+        "deformation": "% of unloaded reference separation",
+        "load": "multiplier of the scene reference load",
+        "time": "simulation seconds",
+        "notes": "Physical scale and force interpretation of the released scene have not been established."
+      },
+      "assumptions": [
+        "Every candidate uses the same geometry, density, Poisson's ratio, supports, load protocol, camera, duration and numerical settings; only stiffness differs.",
+        "Stiffness is a multiplier of the released scene's baseline. Flexible, Balanced and Firm are parameter scenarios, not verified commercial material grades.",
+        "Load is a dimensionless multiplier of the scene's reference load; no force in newtons is implied.",
+        "Deformation is reported as a percentage of the unloaded reference separation along the loading axis.",
+        "Geometry-based compression is a screening metric only; transmitted force, energy absorption, recovery and repeated loading are not modelled."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Berketunc/Xplore/shared/experiment.schema.json",
+  "title": "Xplore API contract",
+  "description": "DRAFT v1.0 (Person A draft, pending Person B review; B owns the wire format). Each route's body is one of the $defs below. Extra properties are allowed so the backend can add fields without breaking the frontend. Use null (never sample values) for unavailable measurements.",
+  "$defs": {
+    "SchemaVersion": { "const": "1.0" },
+
+    "CandidateId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+      "description": "Stable candidate ID from the catalog, e.g. flexible, balanced, firm."
+    },
+
+    "EvidenceStatus": {
+      "enum": ["simulation_only", "physically_compared", "illustrative"],
+      "description": "simulation_only = real simulation, physical validation pending. physically_compared = matched physical experiment compared. illustrative = development fixture or simplified illustration."
+    },
+
+    "Engine": {
+      "enum": ["powersim", "analytical_baseline", null],
+      "description": "Engine that produced the run. null only for illustrative fixtures (fixture: true), which were not produced by any engine."
+    },
+
+    "ExecutionMode": {
+      "enum": ["live", "cached", null],
+      "description": "live = executed for this request; cached = reused a stored genuine run with matching cache key. null while queued, or for fixtures."
+    },
+
+    "ExperimentStatus": { "enum": ["queued", "running", "completed", "partial", "failed"] },
+
+    "RunStatus": { "enum": ["queued", "running", "completed", "failed"] },
+
+    "Protocol": { "enum": ["compression", "deflection"] },
+
+    "UnitSystem": {
+      "type": "object",
+      "required": ["kind", "deformation", "load", "time"],
+      "properties": {
+        "kind": {
+          "enum": ["dimensionless", "dimensional"],
+          "description": "dimensionless until Person B establishes consistent length/mass/time/force units. Only dimensional may report mm or N."
+        },
+        "deformation": { "type": "string", "description": "e.g. '% of unloaded reference separation'" },
+        "load": { "type": "string", "description": "e.g. 'multiplier of the scene reference load'" },
+        "time": { "type": "string", "description": "e.g. 'simulation seconds'" },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "MetricDefinition": {
+      "type": "object",
+      "required": ["metric_id", "label", "unit", "definition", "aggregation"],
+      "properties": {
+        "metric_id": { "type": "string", "description": "e.g. compression_pct or deflection_pct" },
+        "label": { "type": "string" },
+        "unit": { "const": "%" },
+        "definition": { "type": "string" },
+        "aggregation": {
+          "enum": ["peak", "settled_mean"],
+          "description": "peak over the fixed interval, or mean over a predefined settling window. Same rule for every candidate."
+        },
+        "window_description": { "type": "string" }
+      }
+    },
+
+    "Range": {
+      "type": "object",
+      "required": ["label", "unit", "min", "max", "default"],
+      "properties": {
+        "label": { "type": "string" },
+        "unit": { "type": "string" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number" },
+        "default": { "type": "number" }
+      }
+    },
+
+    "CandidateDefinition": {
+      "type": "object",
+      "required": ["candidate_id", "label", "description", "parameter"],
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/CandidateId" },
+        "label": { "type": "string", "description": "Interface label only, not a verified commercial grade." },
+        "description": { "type": "string" },
+        "parameter": {
+          "type": "object",
+          "required": ["name", "value", "unit"],
+          "description": "The single experimental variable that differs between candidates.",
+          "properties": {
+            "name": { "type": "string", "description": "e.g. stiffness_multiplier" },
+            "value": { "type": "number" },
+            "unit": { "type": "string", "description": "e.g. 'x baseline Young's modulus'" }
+          }
+        }
+      }
+    },
+
+    "SceneDefinition": {
+      "type": "object",
+      "required": ["scene_id", "display_name", "description", "calibration"],
+      "properties": {
+        "scene_id": { "type": "string" },
+        "display_name": { "type": "string" },
+        "description": { "type": "string" },
+        "source": { "type": "string", "description": "Attribution / provenance of the asset." },
+        "calibration": {
+          "enum": ["illustrative", "dimensionless", "dimensional"],
+          "description": "Whether the scene is only illustrative, consistent but unit-free, or dimensionally calibrated."
+        },
+        "preview_url": { "type": ["string", "null"] }
+      }
+    },
+
+    "TestDefinition": {
+      "type": "object",
+      "required": ["test_id", "title", "protocol", "availability", "engine", "scene", "metric", "load", "target", "candidates", "max_candidates", "unit_system", "assumptions"],
+      "properties": {
+        "test_id": { "type": "string" },
+        "title": { "type": "string" },
+        "protocol": { "$ref": "#/$defs/Protocol" },
+        "availability": {
+          "enum": ["available", "proposed"],
+          "description": "proposed until the feasibility gate confirms the scene, protocol and metric actually work. The UI only allows submission for available tests (or mock mode)."
+        },
+        "engine": { "enum": ["powersim", "analytical_baseline"] },
+        "scene": { "$ref": "#/$defs/SceneDefinition" },
+        "metric": { "$ref": "#/$defs/MetricDefinition" },
+        "load": { "$ref": "#/$defs/Range" },
+        "target": { "$ref": "#/$defs/Range" },
+        "candidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CandidateDefinition" }
+        },
+        "max_candidates": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "unit_system": { "$ref": "#/$defs/UnitSystem" },
+        "assumptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "Catalog": {
+      "description": "GET /v1/catalog. Authoritative list of supported tests.",
+      "type": "object",
+      "required": ["schema_version", "tests"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" },
+        "fixture": { "type": "boolean" },
+        "tests": { "type": "array", "items": { "$ref": "#/$defs/TestDefinition" } }
+      }
+    },
+
+    "Health": {
+      "description": "GET /health",
+      "type": "object",
+      "required": ["status", "schema_version"],
+      "properties": {
+        "status": { "const": "ok" },
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" }
+      }
+    },
+
+    "ExperimentRequest": {
+      "description": "POST /v1/experiments body. Server validates IDs and ranges against the catalog before any GPU work.",
+      "type": "object",
+      "required": ["schema_version", "test_id", "candidate_ids", "load_multiplier", "target_max_deformation_pct"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" },
+        "test_id": { "type": "string" },
+        "candidate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/CandidateId" }
+        },
+        "load_multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "target_max_deformation_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "prototype_costs_gbp": {
+          "type": "object",
+          "description": "Optional user-provided prototype cost per candidate. Missing or null entries mean unknown.",
+          "propertyNames": { "$ref": "#/$defs/CandidateId" },
+          "additionalProperties": { "type": ["number", "null"], "minimum": 0 }
+        }
+      }
+    },
+
+    "TimeSeries": {
+      "type": "object",
+      "required": ["t", "deformation_pct", "t_unit", "sample_interval"],
+      "properties": {
+        "t": { "type": "array", "items": { "type": "number" } },
+        "deformation_pct": { "type": "array", "items": { "type": "number" } },
+        "t_unit": { "type": "string", "description": "e.g. simulation_s" },
+        "sample_interval": { "type": "number", "description": "Same for every candidate so chart and video align." }
+      }
+    },
+
+    "RunError": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "description": "e.g. numerical_instability, timeout, worker_error" },
+        "message": { "type": "string" }
+      }
+    },
+
+    "Run": {
+      "description": "One candidate's simulation. Result fields are null until status is completed.",
+      "type": "object",
+      "required": ["candidate_id", "status", "engine", "execution_mode", "cache_key", "metric_id", "deformation_pct", "time_series", "video_url", "runtime_seconds", "error"],
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/CandidateId" },
+        "status": { "$ref": "#/$defs/RunStatus" },
+        "engine": { "$ref": "#/$defs/Engine" },
+        "execution_mode": { "$ref": "#/$defs/ExecutionMode" },
+        "cache_key": { "type": ["string", "null"] },
+        "metric_id": { "type": "string" },
+        "deformation_pct": { "type": ["number", "null"] },
+        "time_series": { "oneOf": [{ "$ref": "#/$defs/TimeSeries" }, { "type": "null" }] },
+        "video_url": { "type": ["string", "null"], "description": "Browser-readable HTTP URL (e.g. /v1/artifacts/{id}/{file}.mp4), not a volume path." },
+        "still_url": { "type": ["string", "null"] },
+        "runtime_seconds": { "type": ["number", "null"], "description": "Actual execution time of the run being reported. null for fixtures." },
+        "error": { "oneOf": [{ "$ref": "#/$defs/RunError" }, { "type": "null" }] }
+      }
+    },
+
+    "SelectionEntry": {
+      "type": "object",
+      "required": ["candidate_id", "outcome", "deformation_pct", "prototype_cost_gbp", "rank"],
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/CandidateId" },
+        "outcome": {
+          "enum": ["meets_target", "exceeds_target", "not_evaluated"],
+          "description": "not_evaluated for failed or incomplete runs."
+        },
+        "deformation_pct": { "type": ["number", "null"] },
+        "prototype_cost_gbp": { "type": ["number", "null"] },
+        "rank": { "type": ["integer", "null"], "minimum": 1, "description": "Position in the cost-ordered shortlist; null if not qualifying or costs incomplete." }
+      }
+    },
+
+    "Selection": {
+      "description": "Computed by the backend with the deterministic rule (plan section 5). The frontend and assistant only display/explain it.",
+      "type": "object",
+      "required": ["rule_id", "rule_description", "metric_id", "target_max_deformation_pct", "provisional", "cost_ranking_available", "candidates", "shortlist", "recommended_candidate_id", "notes"],
+      "properties": {
+        "rule_id": { "type": "string", "description": "e.g. target-then-cost-v1" },
+        "rule_description": { "type": "string" },
+        "metric_id": { "type": "string" },
+        "target_max_deformation_pct": { "type": "number" },
+        "provisional": { "type": "boolean", "description": "true if any requested candidate failed or is incomplete." },
+        "cost_ranking_available": { "type": "boolean", "description": "true only when every qualifying candidate has a user-provided cost." },
+        "candidates": { "type": "array", "items": { "$ref": "#/$defs/SelectionEntry" } },
+        "shortlist": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CandidateId" },
+          "description": "Qualifying candidates, ordered by cost then lower deformation then candidate ID when costs are complete; otherwise ordered by lower deformation then candidate ID."
+        },
+        "recommended_candidate_id": {
+          "type": ["string", "null"],
+          "description": "Lowest-cost qualifying candidate when cost_ranking_available; otherwise null. Never an automatic winner when nothing qualifies."
+        },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "Versions": {
+      "type": "object",
+      "properties": {
+        "api": { "type": ["string", "null"] },
+        "runner": { "type": ["string", "null"], "description": "Xplore runner version" },
+        "powersim_commit": { "type": ["string", "null"] }
+      }
+    },
+
+    "Experiment": {
+      "description": "POST /v1/experiments (202, minimal fields) and GET /v1/experiments/{id} (full record). Status must be durable across API instances.",
+      "type": "object",
+      "required": ["schema_version", "experiment_id", "status", "completed_runs", "total_runs", "runs", "selection", "evidence_status"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" },
+        "experiment_id": { "type": "string" },
+        "fixture": { "type": "boolean", "description": "true for development fixtures. Must be paired with evidence_status illustrative." },
+        "status": { "$ref": "#/$defs/ExperimentStatus" },
+        "completed_runs": { "type": "integer", "minimum": 0 },
+        "total_runs": { "type": "integer", "minimum": 0 },
+        "runs": { "type": "array", "items": { "$ref": "#/$defs/Run" } },
+        "selection": { "oneOf": [{ "$ref": "#/$defs/Selection" }, { "type": "null" }] },
+        "evidence_status": { "$ref": "#/$defs/EvidenceStatus" },
+        "request": { "$ref": "#/$defs/ExperimentRequest" },
+        "unit_system": { "$ref": "#/$defs/UnitSystem" },
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "created_at": { "type": "string", "format": "date-time" },
+        "completed_at": { "type": ["string", "null"], "format": "date-time" },
+        "versions": { "$ref": "#/$defs/Versions" },
+        "checkpoint_id": { "type": ["string", "null"] },
+        "config_hash": { "type": ["string", "null"] },
+        "error": { "oneOf": [{ "$ref": "#/$defs/RunError" }, { "type": "null" }] },
+        "physical_validation": {
+          "type": "object",
+          "description": "Present only when matched physical comparison records exist."
+        }
+      },
+      "if": { "properties": { "fixture": { "const": true } }, "required": ["fixture"] },
+      "then": { "properties": { "evidence_status": { "const": "illustrative" } } }
+    },
+
+    "Summary": {
+      "description": "GET /v1/experiments/{id}/summary. Compact read-only context for the assistant. Every number must come from the experiment record.",
+      "type": "object",
+      "required": ["schema_version", "experiment_id", "status", "evidence_status", "test", "load_multiplier", "unit_system", "candidates", "selection", "assumptions"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/SchemaVersion" },
+        "experiment_id": { "type": "string" },
+        "fixture": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/ExperimentStatus" },
+        "evidence_status": { "$ref": "#/$defs/EvidenceStatus" },
+        "test": {
+          "type": "object",
+          "required": ["test_id", "title", "protocol", "scene", "metric"],
+          "properties": {
+            "test_id": { "type": "string" },
+            "title": { "type": "string" },
+            "protocol": { "$ref": "#/$defs/Protocol" },
+            "scene": { "type": "string" },
+            "metric": { "$ref": "#/$defs/MetricDefinition" }
+          }
+        },
+        "load_multiplier": { "type": "number" },
+        "unit_system": { "$ref": "#/$defs/UnitSystem" },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["candidate_id", "label", "status", "engine", "execution_mode", "deformation_pct", "outcome", "prototype_cost_gbp"],
+            "properties": {
+              "candidate_id": { "$ref": "#/$defs/CandidateId" },
+              "label": { "type": "string" },
+              "status": { "$ref": "#/$defs/RunStatus" },
+              "engine": { "$ref": "#/$defs/Engine" },
+              "execution_mode": { "$ref": "#/$defs/ExecutionMode" },
+              "deformation_pct": { "type": ["number", "null"] },
+              "outcome": { "enum": ["meets_target", "exceeds_target", "not_evaluated"] },
+              "prototype_cost_gbp": { "type": ["number", "null"] }
+            }
+          }
+        },
+        "selection": { "oneOf": [{ "$ref": "#/$defs/Selection" }, { "type": "null" }] },
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "ApiError": {
+      "description": "Body for 4xx/5xx responses, e.g. 422 for unsupported candidate IDs or out-of-range loads.",
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string" },
+            "message": { "type": "string" },
+            "details": {}
+          }
+        }
+      }
+    }
+  }
+}
