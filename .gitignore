@@ -21,3 +21,10 @@ artifacts/
 .idea/
 __pycache__/
 .venv/
+
+# Local simulation source, caches, and generated state
+.cache/
+.pytest_cache/
+data/
+outputs/
+*.pyc

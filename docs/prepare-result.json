@@ -1,0 +1,25 @@
+{
+  "upstream_commit": "24266e5264a213bceb426796ce91e12a555e2f69",
+  "dataset": "Tung11/PowerSim",
+  "dataset_revision": "78e400018cb9fb20a0e5a62a9138805379055efb",
+  "scene": "pillow2sofa_gs_fewer_points",
+  "files": {
+    "powerfoam_ckpt/pillow2sofa_gs_fewer_points/config.yaml": {
+      "bytes": 1067,
+      "sha256": "d1c6061af9e0c5a0e5efdd7f7b5415f318a5abc13a9089492fe2d823cd78eebd"
+    },
+    "powerfoam_ckpt/pillow2sofa_gs_fewer_points/model.pt": {
+      "bytes": 1170974629,
+      "sha256": "a147f5eb3b08b5d2e67e93c9d5643941801e2fde2a447678996ece78b73d4ad7"
+    },
+    "powerfoam_ckpt/pillow2sofa_gs_fewer_points/cameras_train.pt": {
+      "bytes": 2425883,
+      "sha256": "a0d99bc52a5341891efe3d9109cdb79019b032004268b3442cf23c64433aacfd"
+    },
+    "README.md": {
+      "bytes": 3373,
+      "sha256": "7158de313ec6887494ace45f4a607d48176e91f91d5666fc9f8a2a8fdba0d9b2"
+    }
+  },
+  "prepare_seconds": 12.106877027
+}

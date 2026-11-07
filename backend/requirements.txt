@@ -1,0 +1,3 @@
+# Local numeric checks. GPU dependencies are pinned by the upstream source.
+numpy==2.1.2
+modal==1.6.2
